@@ -256,3 +256,38 @@ body {
 .btn-secondary:hover {
     background-color: #e0e0e0;
 }
+
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.data-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+    white-space: nowrap;
+}
+
+.data-preview-table th {
+    background-color: #f9fafb;
+    padding: 12px 15px;
+    text-align: left;
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #555;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.data-preview-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #333;
+    font-size: 0.95em;
+    vertical-align: middle; 
+}
+
+.data-preview-table tbody tr:last-child td {
+    border-bottom: none;
+}

@@ -5,6 +5,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from config import Config
 from models import db, bcrypt, User, Dataset
 from werkzeug.utils import secure_filename
+from utils import load_dataset, get_data_summary, apply_transformations
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -172,8 +173,61 @@ def preprocess(dataset_id):
     if dataset.owner != current_user:
         flash('You do not have permission to access this dataset.', 'danger')
         return redirect(url_for('datasets'))
-    return render_template('preprocess.html', dataset=dataset)
+    
+    df, error = load_dataset(dataset)
+    if error:
+        flash(f"Could not load dataset: {error}", 'danger')
+        return redirect(url_for('datasets'))
 
+    data_summary = get_data_summary(df)
+    return render_template('preprocess.html', dataset=dataset, data_summary=data_summary)
+
+@app.route('/apply-preprocess/<int:dataset_id>', methods=['POST'])
+@login_required
+def apply_preprocess(dataset_id):
+    original_dataset = Dataset.query.get_or_404(dataset_id)
+    if original_dataset.owner != current_user:
+        flash('You do not have permission to modify this dataset.', 'danger')
+        return redirect(url_for('datasets'))
+
+    df, error = load_dataset(original_dataset)
+    if error:
+        flash(f"Could not load dataset: {error}", 'danger')
+        return redirect(url_for('preprocess', dataset_id=dataset_id))
+
+    form_data = request.form
+    transformed_df, error = apply_transformations(df, form_data)
+    if error:
+        flash(f"Could not apply transformations: {error}", 'danger')
+        return redirect(url_for('preprocess', dataset_id=dataset_id))
+
+    try:
+        new_filename = f"{uuid.uuid4().hex}.{original_dataset.filepath.rsplit('.', 1)[1]}"
+        new_save_path = os.path.join(app.config['UPLOAD_FOLDER'], new_filename)
+
+        base_name = os.path.splitext(original_dataset.filename)[0]
+        new_display_name = f"{base_name}_preprocessed.{original_dataset.filename.rsplit('.', 1)[1]}"
+
+        transformed_df.to_csv(new_save_path, index=False)
+        new_filesize = os.path.getsize(new_save_path)
+
+        new_dataset = Dataset()
+        new_dataset.filename = new_display_name
+        new_dataset.filepath = new_filename
+        new_dataset.filesize = new_filesize
+        new_dataset.status = 'Preprocessed'
+        new_dataset.user_id = current_user.id
+
+        db.session.add(new_dataset)
+        db.session.commit()
+
+        flash(f'Preprocessing applied successfully! New dataset "{new_display_name}" created.', 'success')
+        return redirect(url_for('datasets'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'An error occurred while applying preprocessing: {str(e)}', 'danger')
+        return redirect(url_for('preprocess', dataset_id=dataset_id))
+    
 @app.route('/models')
 @login_required
 def models():
@@ -182,7 +236,12 @@ def models():
 @app.route('/train')
 @login_required
 def train():
-    return render_template('train.html')
+    datasets = current_user.datasets
+
+    preprocessed_datasets = [ds for ds in datasets if ds.status == 'Preprocessed']
+    raw_datasets = [ds for ds in datasets if ds.status == 'Raw']
+
+    return render_template('train.html', preprocessed_datasets=preprocessed_datasets, raw_datasets=raw_datasets)
 
 @app.route('/experiments')
 @login_required
