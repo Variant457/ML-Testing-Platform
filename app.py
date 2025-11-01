@@ -1,7 +1,10 @@
+import os
+import uuid
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from config import Config
-from models import db, bcrypt, User
+from models import db, bcrypt, User, Dataset
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -13,6 +16,10 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login' #type: ignore
 login_manager.login_message_category = 'info'
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 @app.after_request
 def add_header(response):
@@ -75,6 +82,72 @@ def logout():
     flash('You have been logged out.', 'info')
     return redirect(url_for('login'))
 
+@app.route('/upload-dataset', methods=['POST'])
+@login_required
+def upload_dataset():
+    if 'dataset_file' not in request.files:
+        flash('No file part in the request.', 'danger')
+        return redirect(request.referrer or url_for('datasets'))
+
+    file = request.files['dataset_file']
+    if file.filename == '':
+        flash('No selected file.', 'danger')
+        return redirect(request.referrer or url_for('datasets'))
+
+    if file and allowed_file(file.filename):
+        orig_filename = secure_filename(file.filename) # type: ignore
+        ext = orig_filename.rsplit('.', 1)[1].lower()
+        unique_filename = f"{uuid.uuid4().hex}.{ext}"
+        save_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+
+        try:
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+            file.save(save_path)
+            filesize = os.path.getsize(save_path)
+
+            new_dataset = Dataset()
+            new_dataset.filename = orig_filename
+            new_dataset.filepath = unique_filename
+            new_dataset.filesize = filesize
+            new_dataset.status = 'Raw'
+            new_dataset.user_id = current_user.id
+
+            db.session.add(new_dataset)
+            db.session.commit()
+
+            flash(f'Dataset "{orig_filename}" uploaded successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'An error occurred while uploading the file: {str(e)}', 'danger')
+        return redirect(url_for('datasets'))
+
+    flash('Invalid file type. Please upload a valid dataset file.', 'danger')
+    return redirect(request.referrer or url_for('datasets'))
+
+@app.route('/delete-dataset/<int:dataset_id>')
+@login_required
+def delete_dataset(dataset_id):
+    dataset = Dataset.query.get_or_404(dataset_id)
+
+    if dataset.owner != current_user:
+        flash('You do not have permission to delete this dataset.', 'danger')
+        return redirect(url_for('datasets'))
+
+    try:
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], dataset.filepath)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        db.session.delete(dataset)
+        db.session.commit()
+        flash(f'Dataset "{dataset.filename}" has been deleted.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'An error occurred while deleting the dataset: {str(e)}', 'danger')
+
+    return redirect(url_for('datasets'))
+
 @app.route('/')
 @app.route('/dashboard')
 @login_required
@@ -84,12 +157,18 @@ def dashboard():
 @app.route('/datasets')
 @login_required
 def datasets():
-    return render_template('datasets.html')
+    user_datasets = current_user.datasets
+    return render_template('datasets.html', datasets=user_datasets)
 
-@app.route('/preprocess')
+@app.route('/preprocess/<int:dataset_id>')
 @login_required
-def preprocess():
-    return render_template('preprocess.html')
+def preprocess(dataset_id):
+    dataset = Dataset.query.get_or_404(dataset_id)
+
+    if dataset.owner != current_user:
+        flash('You do not have permission to access this dataset.', 'danger')
+        return redirect(url_for('datasets'))
+    return render_template('preprocess.html', dataset=dataset)
 
 @app.route('/models')
 @login_required
