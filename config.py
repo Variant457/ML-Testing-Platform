@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from datetime import timedelta
 
 load_dotenv()
 
@@ -12,3 +13,5 @@ class Config:
 
     UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
     ALLOWED_EXTENSIONS = {'txt', 'csv', 'xlsx'}
+
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=10)

@@ -1,6 +1,6 @@
 import os
 import uuid
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from config import Config
 from models import db, bcrypt, User, Dataset
@@ -8,6 +8,10 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
 
 db.init_app(app)
 bcrypt.init_app(app)
