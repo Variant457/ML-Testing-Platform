@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Platform - Experiment Result</title>
+    
+    <link rel="stylesheet" href="experiment-result.css">
+</head>
+<body>
+
+    <nav id="sidebar">
+        <h1><i class="fas fa-brain"></i> ML Platform</h1>
+        <ul>
+            <li><a href="/dashboard"></i> Dashboard</a></li>
+            <li><a href="/datasets"></i> Datasets</a></li>
+            <li><a href="/train"></i> Train Model</a></li>
+            <li><a href="/experiments" class="active"></i> Experiments</a></li>
+            <li><a href="/compare"></i> Compare Models</a></li>
+        </ul>
+    </nav>
+
+    <main id="main-content">
+
+        <header class="top-bar">
+            <h2>Experiment: Titanic - Random Forest (Run 1)</h2>
+            <div class="user-info">
+                <span>Welcome, {User}!</span>
+                <a href="/logout" class="logout-button">Logout</a>
+            </div>
+        </header>
+
+        <section class="config-card summary-card">
+            <h3></i> Experiment Summary</h3>
+            <ul>
+                <li><strong>Dataset:</strong> titanic_preprocessed.csv</li>
+                <li><strong>Model:</strong> Random Forests</li>
+                <li><strong>Target Variable:</strong> Survived (Classification)</li>
+                <li><strong>Evaluation:</strong> 5-Fold Cross-Validation</li>
+                <li><strong>Status:</strong> <span class="status-badge status-complete">Complete</span></li>
+            </ul>
+        </section>
+
+        <section class="key-metrics-grid">
+            <div class="metric-card">
+                <span class="stat-label">Accuracy</span>
+                <span class="stat-number">81.12%</span>
+            </div>
+            <div class="metric-card">
+                <span class="stat-label">F1-Score (Weighted)</span>
+                <span class="stat-number">0.79</span>
+            </div>
+            <div class="metric-card">
+                <span class="stat-label">ROC AUC</span>
+                <span class="stat-number">0.86</span>
+            </div>
+            <div class="metric-card">
+                <span class="stat-label">PR AUC</span>
+                <span class="stat-number">0.81</span>
+            </div>
+        </section>
+        
+        <section class="visualizations-grid">
+            
+            <div class="visualization-card">
+                <h3>ROC Curve</h3>
+                <div class="plot-placeholder">
+                    <span>ROC Curve Plot</span>
+                </div>
+            </div>
+
+            <div class="visualization-card">
+                <h3>Precision-Recall Curve</h3>
+                <div class="plot-placeholder">
+                    <span>PR Curve Plot</span>
+                </div>
+            </div>
+
+            <div class="visualization-card">
+                <h3>Confusion Matrix</h3>
+                <div class="plot-placeholder">
+                    <span>Confusion Matrix Heatmap</span>
+                </div>
+            </div>
+
+            <div class="visualization-card">
+                <h3>Feature Importance</h3>
+                <div class="plot-placeholder">
+                    <span>Feature Importance Bar Chart</span>
+                </div>
+            </div>
+
+        </section>
+
+        <section class="config-card">
+            <h3></i> Detailed Classification Report</h3>
+            <table class="metrics-table">
+                <thead>
+                    <tr>
+                        <th>Class</th>
+                        <th>Precision</th>
+                        <th>Recall</th>
+                        <th>F1-Score</th>
+                        <th>Support</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>0 (Did Not Survive)</strong></td>
+                        <td>0.82</td>
+                        <td>0.89</td>
+                        <td>0.85</td>
+                        <td>549</td>
+                    </tr>
+                    <tr>
+                        <td><strong>1 (Survived)</strong></td>
+                        <td>0.79</td>
+                        <td>0.68</td>
+                        <td>0.73</td>
+                        <td>342</td>
+                    </tr>
+                    <tr>
+                        <td><strong>---</strong></td>
+                        <td>---</td>
+                        <td>---</td>
+                        <td>---</td>
+                        <td>---</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Accuracy</strong></td>
+                        <td></td>
+                        <td></td>
+                        <td><strong>0.81</strong></td>
+                        <td>891</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Macro Avg</strong></td>
+                        <td>0.81</td>
+                        <td>0.78</td>
+                        <td>0.79</td>
+                        <td>891</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Weighted Avg</strong></td>
+                        <td>0.81</td>
+                        <td>0.81</td>
+                        <td>0.80</td>
+                        <td>891</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</body>
+</html>

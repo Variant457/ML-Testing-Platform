@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Platform - Preprocessing</title>
+    
+    <link rel="stylesheet" href="preprocess.css">
+</head>
+<body>
+
+    <nav id="sidebar">
+        <h1><i class="fas fa-brain"></i> ML Platform</h1>
+        <ul>
+            <li><a href="/dashboard"></i> Dashboard</a></li>
+            <li><a href="/datasets" class="active"></i> Datasets</a></li>
+            <li><a href="/train"></i> Train Model</a></li>
+            <li><a href="/experiments"></i> Experiments</a></li>
+            <li><a href="/compare"></i> Compare Models</a></li>
+        </ul>
+    </nav>
+
+    <main id="main-content">
+
+        <header class="top-bar">
+            <h2>Preprocessing: titanic.csv</h2> <div class="user-info">
+                <span>Welcome, {User}!</span>
+                <a href="/logout" class="logout-button">Logout</a>
+            </div>
+        </header>
+
+        <section class="settings-card">
+            <h3>Data Splitting & Reproducibility</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="train-split">Train (%)</label>
+                    <input type="number" id="train-split" value="70" min="0" max="100">
+                </div>
+                <div class="form-group">
+                    <label for="random-seed">Random Seed</label>
+                    <input type="number" id="random-seed" value="42">
+                </div>
+            </div>
+        </section>
+
+        <section class="column-table-container">
+            <h3>Column Configuration</h3>
+            <table id="column-table">
+                <thead>
+                    <tr>
+                        <th>Column Name</th>
+                        <th>Detected Type</th>
+                        <th>Missing Values</th>
+                        <th>Strategy (Type)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Age</strong></td>
+                        <td>Numeric (Decimal)</td>
+                        <td><span class="missing-count">177 missing</span></td>
+                        <td>
+                            <select class="type-select">
+                                <option value="numeric" selected>Numeric</option>
+                                <option value="categorical">Categorical</option>
+                                <option value="drop">Drop Column</option>
+                            </select>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Sex</strong></td>
+                        <td>Categorical (2 unique)</td>
+                        <td>0 missing</td>
+                        <td>
+                            <select class="type-select">
+                                <option value="numeric">Numeric</option>
+                                <option value="categorical" selected>Categorical</option>
+                                <option value="drop">Drop Column</option>
+                            </select>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>PassengerId</strong></td>
+                        <td>Numeric (891 unique)</td>
+                        <td>0 missing</td>
+                        <td>
+                            <select class="type-select">
+                                <option value="numeric">Numeric</option>
+                                <option value="categorical">Categorical</option>
+                                <option value="drop" selected>Drop Column</option>
+                            </select>
+                        </td>
+                    </tr>
+
+                    </tbody>
+            </table>
+        </section>
+        
+        <section class="page-actions-footer">
+            <a href="/datasets" class="btn-secondary">Cancel</a>
+            <a href="#" class="cta-button"></i> Save & Apply Changes</a>
+        </section>
+
+    </main>
+
+</body>
+</html>

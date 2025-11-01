@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Platform - My Datasets</title>
+    
+    <link rel="stylesheet" href="datasets.css">
+</head>
+<body>
+
+    <nav id="sidebar">
+        <h1><i class="fas fa-brain"></i> ML Platform</h1>
+        <ul>
+            <li><a href="/dashboard"></i> Dashboard</a></li>
+            <li><a href="/datasets" class="active">Datasets</a></li>
+            <li><a href="/train">Train Model</a></li>
+            <li><a href="/experiments">Experiments</a></li>
+            <li><a href="/compare">Compare Models</a></li>
+        </ul>
+    </nav>
+
+    <main id="main-content">
+
+        <header class="top-bar">
+            <h2>My Datasets</h2>
+            <div class="user-info">
+                <span>Welcome, {User}!</span>
+                <a href="/logout" class="logout-button">Logout</a>
+            </div>
+        </header>
+
+        <section class="page-actions">
+            <a href="#" id="open-upload-modal-btn" class="cta-button"></i> Upload New Dataset</a>
+        </section>
+
+        <section class="dataset-table-container">
+            <table id="datasets-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Status</th>
+                        <th>Uploaded</th>
+                        <th>File Size</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>titanic.csv</td>
+                        <td><span class="status-badge status-preprocessed">Preprocessed</span></td>
+                        <td>Oct 30, 2025</td>
+                        <td>128 KB</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="/preprocess/1" class="btn-action btn-preprocess"></i> Modify</a>
+                                <a href="/compare/1" class="btn-action btn-compare"></i> Compare</a>
+                                <a href="/delete/1" class="btn-action btn-delete"></i> Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td>house_prices.xlsx</td>
+                        <td><span class="status-badge status-raw">Raw</span></td>
+                        <td>Oct 29, 2025</td>
+                        <td>2.1 MB</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="/preprocess/2" class="btn-action btn-preprocess"></i> Preprocess</a>
+                                <a href="/compare/2" class="btn-action btn-compare disabled"></i> Compare</a>
+                                <a href="/delete/2" class="btn-action btn-delete"></i> Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    </tbody>
+            </table>
+        </section>
+
+    </main>
+
+    <div id="upload-modal-backdrop" class="modal-backdrop hidden"></div>
+
+    <div id="upload-modal" class="modal hidden">
+        <div class="modal-header">
+            <h3>Upload New Dataset</h3>
+            <button id="close-modal-btn" class="close-button">&times;</button>
+        </div>
+        
+        <form action="/upload-dataset" method="POST" enctype="multipart/form-data">
+            <div class="modal-body">
+                
+                <div class="form-group">
+                    <label for="file-upload">Select File (.csv, .xlsx, .txt)</label>
+                    <input type="file" id="file-upload" name="dataset_file" accept=".csv,.xlsx,.txt" required>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="cancel-modal-btn" class="btn-secondary">Cancel</button>
+                <button type="submit" class="cta-button"></i> Upload & Process</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const openModalBtn = document.getElementById('open-upload-modal-btn');
+        const modalBackdrop = document.getElementById('upload-modal-backdrop');
+        const modal = document.getElementById('upload-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const cancelModalBtn = document.getElementById('cancel-modal-btn');
+
+        function openModal() {
+            modal.classList.remove('hidden');
+            modalBackdrop.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+            modalBackdrop.classList.add('hidden');
+        }
+
+        openModalBtn.addEventListener('click', openModal);
+        closeModalBtn.addEventListener('click', closeModal);
+        cancelModalBtn.addEventListener('click', closeModal);
+        modalBackdrop.addEventListener('click', closeModal); 
+    </script>
+
+</body>
+</html>

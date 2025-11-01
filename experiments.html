@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Platform - My Experiments</title>
+    
+    <link rel="stylesheet" href="experiments.css">
+</head>
+<body>
+
+    <nav id="sidebar">
+        <h1></i> ML Platform</h1>
+        <ul>
+            <li><a href="/dashboard"></i> Dashboard</a></li>
+            <li><a href="/datasets"></i> Datasets</a></li>
+            <li><a href="/train"></i> Train Model</a></li>
+            <li><a href="/experiments" class="active"></i> Experiments</a></li>
+            <li><a href="/compare"></i> Compare Models</a></li>
+        </ul>
+    </nav>
+
+    <main id="main-content">
+
+        <header class="top-bar">
+            <h2>My Experiments</h2>
+            <div class="user-info">
+                <span>Welcome, {User}!</span>
+                <a href="/logout" class="logout-button">Logout</a>
+            </div>
+        </header>
+
+        <section class="page-actions">
+            <a href="/train" class="cta-button"></i> Train New Model</a>
+        </section>
+
+        <section class="experiment-table-container">
+            <table id="experiments-table">
+                <thead>
+                    <tr>
+                        <th>Experiment Name</th>
+                        <th>Status</th>
+                        <th>Model</th>
+                        <th>Dataset</th>
+                        <th>Key Metric</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Titanic - Random Forest (Run 1)</strong></td>
+                        <td><span class="status-badge status-complete">Complete</span></td>
+                        <td>Random Forests</td>
+                        <td>titanic_preprocessed.csv</td>
+                        <td>F1: 0.82</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="/experiment-result/1" class="btn-action btn-view"></i> View Results</a>
+                                <a href="/delete/exp/1" class="btn-action btn-delete"></i> Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>House Prices - DNN (Run 1)</strong></td>
+                        <td><span class="status-badge status-running">Running</span></td>
+                        <td>User-Defined DNN</td>
+                        <td>house_prices_preprocessed.csv</td>
+                        <td>N/A</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="#" class="btn-action btn-view disabled"></i> View Results</a>
+                                <a href="/delete/exp/2" class="btn-action btn-delete"></i> Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>House Prices - Linear Regression</strong></td>
+                        <td><span class="status-badge status-complete">Complete</span></td>
+                        <td>Linear Regression</td>
+                        <td>house_prices_preprocessed.csv</td>
+                        <td>MSE: 12045.2</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="/experiment-result/3" class="btn-action btn-view"></i> View Results</a>
+                                <a href="/delete/exp/3" class="btn-action btn-delete"></i> Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td><strong>Titanic - SVM (Run 1)</strong></td>
+                        <td><span class="status-badge status-failed">Failed</span></td>
+                        <td>SVM</td>
+                        <td>titanic_preprocessed.csv</td>
+                        <td>N/A</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="/log/4" class="btn-action btn-view-log"></i> View Log</a>
+                                <a href="/delete/exp/4" class="btn-action btn-delete"></i> Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+
+</body>
+</html>

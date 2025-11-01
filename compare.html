@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Platform - Compare Models</title>
+    
+    <link rel="stylesheet" href="compare.css">
+</head>
+<body>
+
+    <nav id="sidebar">
+        <h1><i class="fas fa-brain"></i> ML Platform</h1>
+        <ul>
+            <li><a href="/dashboard"></i> Dashboard</a></li>
+            <li><a href="/datasets"> Datasets</a></li>
+            <li><a href="/train"> Train Model</a></li>
+            <li><a href="/experiments"> Experiments</a></li>
+            <li><a href="/compare" class="active"> Compare Models</a></li>
+        </ul>
+    </nav>
+
+    <main id="main-content">
+
+        <header class="top-bar">
+            <h2>Compare Model Performance</h2>
+            <div class="user-info">
+                <span>Welcome, {User}!</span>
+                <a href="/logout" class="logout-button">Logout</a>
+            </div>
+        </header>
+
+        <section class="config-card">
+            <h3></i> Select Dataset</h3>
+            <div class="selector-form">
+                <div class="form-group">
+                    <label for="dataset-select">Select Dataset to Compare:</label>
+                    <select id="dataset-select">
+                        <option value="titanic_processed">titanic_preprocessed.csv</option>
+                        <option value="house_prices_processed">house_prices_preprocessed.csv</option>
+                    </select>
+                </div>
+                <button class="cta-button"></i> Load Comparison</button>
+            </div>
+        </section>
+
+        <section class="leaderboard-container">
+            <h3>Leaderboard: titanic_preprocessed.csv</h3>
+            <table id="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Experiment Name</th>
+                        <th>Model</th>
+                        <th>Key Metric (F1)</th>
+                        <th>Accuracy</th>
+                        <th>ROC AUC</th>
+                        <th>PR AUC</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="rank-cell"><strong>1</strong></td>
+                        <td><strong>Titanic - Random Forest (Run 1)</strong></td>
+                        <td>Random Forests</td>
+                        <td class="key-metric"><strong>0.82</strong></td>
+                        <td>0.81</td>
+                        <td>0.86</td>
+                        <td>0.81</td>
+                        <td><a href="/experiment-result/1" class="btn-action btn-view"></i> View</a></td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="rank-cell"><strong>2</strong></td>
+                        <td><strong>Titanic - Logistic Regression</strong></td>
+                        <td>Logistic Regression</td>
+                        <td class="key-metric"><strong>0.79</strong></td>
+                        <td>0.78</td>
+                        <td>0.84</td>
+                        <td>0.79</td>
+                        <td><a href="/experiment-result/2" class="btn-action btn-view"></i> View</a></td>
+                    </tr>
+
+                    <tr>
+                        <td class="rank-cell"><strong>3</strong></td>
+                        <td><strong>Titanic - SVM (Run 2)</strong></td>
+                        <td>SVM</td>
+                        <td class="key-metric"><strong>0.77</strong></td>
+                        <td>0.77</td>
+                        <td>0.82</td>
+                        <td>0.78</td>
+                        <td><a href="/experiment-result/3" class="btn-action btn-view"></i> View</a></td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+        </section>
+
+        <section class="visualization-card">
+            <h3>Metric Comparison (F1-Score)</h3>
+            <div class="plot-placeholder">
+                <span>Bar Chart Comparing F1-Scores for All Models</span>
+            </div>
+        </section>
+
+    </main>
+</body>
+</html>
