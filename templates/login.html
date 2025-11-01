@@ -9,7 +9,17 @@
 </head>
 <body>
 
-    <form>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}" style="color: red; text-align: center; background: #ffebee; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="">
         <h2>Login to ML Platform</h2>
 
         <div>

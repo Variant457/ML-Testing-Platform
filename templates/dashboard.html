@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ML Platform - Dashboard</title>
     
-    <link rel="stylesheet" href="../static/dashboard.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='datasets.css') }}">
 </head>
 <body>
 
     <nav id="sidebar">
-        <h1><i class="fas fa-brain"></i> ML Platform</h1>
+        <h1></i> ML Platform</h1>
         <ul>
             <li><a href="/dashboard" class="active"></i> Dashboard</a></li>
             <li><a href="/datasets"></i> Datasets</a></li>
@@ -25,7 +26,7 @@
         <header class="top-bar">
             <h2>Dashboard</h2>
             <div class="user-info">
-                <span>Welcome, {User}!</span>
+                <span>Welcome, {{ current_user.username }}!</span>
                 <a href="/logout" class="logout-button">Logout</a>
             </div>
         </header>
@@ -51,7 +52,7 @@
 
         <section class="cta-section">
             <h2>Start a New Project</h2>
-            <a href="/upload" class="cta-button"></i> Upload New Dataset</a>
+            <a href="#" id="open-upload-modal-btn" class="cta-button"></i> Upload New Dataset</a>
         </section>
 
         <section class="recent-activity">
@@ -83,6 +84,53 @@
         </section>
 
     </main>
+
+    <div id="upload-modal-backdrop" class="modal-backdrop hidden"></div>
+
+    <div id="upload-modal" class="modal hidden">
+        <div class="modal-header">
+            <h3>Upload New Dataset</h3>
+            <button id="close-modal-btn" class="close-button">&times;</button>
+        </div>
+
+        <form action="/upload-dataset" method="POST" enctype="multipart/form-data">
+            <div class="modal-body">
+
+                <div class="form-group">
+                    <label for="file-upload">Select File (.csv, .xlsx, .txt)</label>
+                    <input type="file" id="file-upload" name="dataset_file" accept=".csv,.xlsx,.txt" required>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="cancel-modal-btn" class="btn-secondary">Cancel</button>
+                <button type="submit" class="cta-button"></i> Upload & Process</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const openModalBtn = document.getElementById('open-upload-modal-btn');
+        const modalBackdrop = document.getElementById('upload-modal-backdrop');
+        const modal = document.getElementById('upload-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const cancelModalBtn = document.getElementById('cancel-modal-btn');
+
+        function openModal() {
+            modal.classList.remove('hidden');
+            modalBackdrop.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+            modalBackdrop.classList.add('hidden');
+        }
+
+        openModalBtn.addEventListener('click', openModal);
+        closeModalBtn.addEventListener('click', closeModal);
+        cancelModalBtn.addEventListener('click', closeModal);
+        modalBackdrop.addEventListener('click', closeModal); 
+    </script>
 
 </body>
 </html>
