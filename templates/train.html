@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ML Platform - Train Model</title>
     
-    <link rel="stylesheet" href="../static/train.css">
+    <link rel="stylesheet" href="{{url_for('static', filename='train.css')}}">
+    <link rel="stylesheet" href="{{url_for('static', filename='datasets.css')}}">
 </head>
 <body>
 
     <nav id="sidebar">
-        <h1><i class="fas fa-brain"></i> ML Platform</h1>
+        <h1></i> ML Platform</h1>
         <ul>
             <li><a href="/dashboard"></i> Dashboard</a></li>
             <li><a href="/datasets"></i> Datasets</a></li>
@@ -43,8 +44,14 @@
                 <div class="form-group">
                     <label for="dataset-select">Select Preprocessed Dataset</label>
                     <select id="dataset-select">
-                        <option value="titanic_processed">titanic_preprocessed.csv</option>
-                        <option value="house_prices_processed">house_prices_preprocessed.csv</option>
+                        {% if preprocessed_datasets %}
+                            <option value="">-- Select a dataset --</option>
+                            {% for ds in preprocessed_datasets %}
+                                <option value="{{ ds.id }}">{{ ds.filename }}</option>
+                            {% endfor %}
+                        {% else %}
+                            <option value="" disabled>No preprocessed datasets available</option>
+                        {% endif %}
                     </select>
                 </div>
 
