@@ -104,34 +104,46 @@ body {
     border-bottom: 1px solid #eee;
 }
 
-#leaderboard-table {
+.leaderboard-table {
     width: 100%;
     border-collapse: collapse;
+    font-size: 0.95em;
 }
 
-#leaderboard-table th {
-    background-color: #f9fafb;
-    padding: 15px 20px;
+.leaderboard-table th, .leaderboard-table td {
+    padding: 12px 5px;
     text-align: left;
-    font-size: 0.9em;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.leaderboard-table th {
+    background-color: #f7f9fc;
     font-weight: 600;
     color: #555;
     text-transform: uppercase;
-    border-bottom: 2px solid #e0e0e0;
+    font-size: 0.85em;
+    letter-spacing: 0.5px;
 }
 
-#leaderboard-table td {
-    padding: 15px 20px;
-    border-bottom: 1px solid #f0f0f0;
-    color: #333;
-    font-size: 1em;
-}
-#leaderboard-table tbody tr:last-child td {
+.leaderboard-table tbody tr:last-child td {
     border-bottom: none;
 }
-#leaderboard-table tbody tr:hover {
-    background-color: #f7f9fc;
+
+.leaderboard-table tbody tr:hover {
+    background-color: #fdfdfd;
 }
+
+.leaderboard-table td strong {
+    font-weight: 600;
+    color: #007bff;
+    font-size: 1.1em;
+}
+
+.leaderboard-table td:first-child strong {
+    font-size: 1.2em;
+    color: #333;
+}
+
 .rank-cell {
     font-size: 1.2em;
     text-align: center;
@@ -181,4 +193,25 @@ body {
     align-items: center;
     color: #888;
     font-weight: 500;
+}
+
+.compare-card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 25px 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.compare-card h2 {
+    margin-top: 0;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f2f5;
+    color: #0056b3;
+}
+
+.chart-container {
+    position: relative;
+    width: 100%;
 }

@@ -180,6 +180,13 @@ def preprocess(dataset_id):
     if error:
         flash(f"Could not load dataset: {error}", 'danger')
         return redirect(url_for('datasets'))
+    
+    if request.method == 'POST':
+        df_for_transform = df.copy() #type: ignore
+        transformed_df, error = apply_transformations(df_for_transform, request.form)
+        if error:
+            flash(f"Could not apply transformations: {error}", 'danger')
+            return redirect(url_for('preprocess', dataset_id=dataset_id))
 
     data_summary = get_data_summary(df)
     return render_template('preprocess.html', dataset=dataset, data_summary=data_summary)
@@ -346,7 +353,26 @@ def experiment_detail(experiment_id):
 @app.route('/compare')
 @login_required
 def compare():
-    return render_template('compare.html')
+    experiments = Experiment.query.filter_by(user_id=current_user.id, status='Complete').order_by(Experiment.dataset_id).all()
+    comparisons = {}
+    for exp in experiments:
+        if exp.dataset_id not in comparisons:
+            comparisons[exp.dataset_id] = {
+                'dataset_name': exp.dataset.filename,
+                'regression': [],
+                'classification': []
+            }
+
+        if 'mse' in exp.metrics:
+            comparisons[exp.dataset_id]['regression'].append(exp)
+        elif 'accuracy' in exp.metrics:
+            comparisons[exp.dataset_id]['classification'].append(exp)
+    
+    for data in comparisons.values():
+        data['regression'].sort(key=lambda x: x.metrics.get('r2_score', -float('inf')), reverse=True)
+        data['classification'].sort(key=lambda x: x.metrics.get('roc_auc', -float('inf')), reverse=True)
+
+    return render_template('compare.html', comparisons=comparisons)
 
 @app.route('/api/get-dataset-columns/<int:dataset_id>')
 @login_required

@@ -10,6 +10,8 @@ def load_dataset(dataset):
         filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], dataset.filepath)
         filename = dataset.filename
 
+        df = None
+
         if filename.endswith('.csv'):
             df = pd.read_csv(filepath)
         elif filename.endswith('.xlsx'):
@@ -17,22 +19,37 @@ def load_dataset(dataset):
         elif filename.endswith('.txt'):
             df = pd.read_csv(filepath, delimiter=r'\s+|,', engine='python')
         elif filename.endswith('.data'):
-            df = pd.read_csv(
+            try:
+                temp_df = pd.read_csv(
+                    filepath,
+                    delimiter=r'\s+|,',
+                    engine='python',
+                )
+
+                if not all(pd.api.types.is_numeric_dtype(temp_df[col]) for col in temp_df.columns):
+                    df = temp_df
+                else:
+                    raise ValueError("No header detected, trying again with header=None")
+            except ValueError:
+                df = pd.read_csv(
                 filepath,
                 delimiter=r'\s+|,',
                 engine='python',
                 header=None
             )
 
-            df.columns = [f"Feature_{i}" for i in range(df.shape[1])]
+            df.columns = [str(col) for col in df.columns]
         else:
             raise ValueError("Unsupported file format")
+        
+        df.columns = df.columns.astype(str)
         return df, None
     except pd.errors.ParserError as e:
         return None, f"Parsing error: The file appears to be corrupt or improperly formatted. Details: {str(e)}"
     except FileNotFoundError:
         return None, "File not found. Please ensure the dataset exists on the server."
     except Exception as e:
+        current_app.logger.error(f"Error loading dataset: {dataset.filename}: {str(e)}")
         return None, f"An error occurred while loading the dataset: {str(e)}"
     
 def get_data_summary(df):

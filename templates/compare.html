@@ -5,14 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ML Platform - Compare Models</title>
     
-    <link rel="stylesheet" href="../static/compare.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='experiments.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='experiment-result.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='compare.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
     <nav id="sidebar">
-        <h1><i class="fas fa-brain"></i> ML Platform</h1>
+        <h1> ML Platform</h1>
         <ul>
-            <li><a href="/dashboard"></i> Dashboard</a></li>
+            <li><a href="/dashboard"> Dashboard</a></li>
             <li><a href="/datasets"> Datasets</a></li>
             <li><a href="/train"> Train Model</a></li>
             <li><a href="/experiments"> Experiments</a></li>
@@ -30,80 +34,162 @@
             </div>
         </header>
 
+        {% if not comparisons %}
         <section class="config-card">
-            <h3></i> Select Dataset</h3>
-            <div class="selector-form">
-                <div class="form-group">
-                    <label for="dataset-select">Select Dataset to Compare:</label>
-                    <select id="dataset-select">
-                        <option value="titanic_processed">titanic_preprocessed.csv</option>
-                        <option value="house_prices_processed">house_prices_preprocessed.csv</option>
-                    </select>
+            <h3>No Comparisons Available</h3>
+            <p>You have not created any experiments to compare yet.</p>
+            <a href="/experiments" class="cta-button">Create an Experiment to Get Started!</a>
+        </section>
+        {% endif %}
+
+        {% for dataset_id, data in comparisons.items() %}
+        <section class="config-card">
+            <h2>Dataset: {{ dataset.dataset_name }}</h2>
+            {% if data.regression %}
+            <div class="leaderboard">
+                <h3>Regression Leaderboard (Ranked by R-Squared)</h3>
+                <div class="chart-container" style="height: 300px; margin-bottom: 30px;">
+                    <canvas id="chart-reg-{{ dataset_id }}"></canvas>
                 </div>
-                <button class="cta-button"></i> Load Comparison</button>
+
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Experiment Name</th>
+                            <th>Model</th>
+                            <th>R-Squared</th>
+                            <th>MSE</th>
+                            <th>MAE</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exp in data.regression %}
+                        <tr>
+                            <td><strong>{{ loop.index }}</strong></td>
+                            <td>{{ exp.name }}</td>
+                            <td>{{ exp.model_type.replace('_', ' ').title() }}</td>
+                            <td><strong>{{"%.4f".format(exp.metrics.r2_score)}}</strong></td>
+                            <td>{{"%.4f".format(exp.metrics.mse)}}</td>
+                            <td>{{"%.4f".format(exp.metrics.mae)}}</td>
+                            <td>
+                                <a href="{{ url_for('experiment_detail', experiment_id=exp.id) }}" class="btn-action btn-view">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-        </section>
+            {% endif %}
 
-        <section class="leaderboard-container">
-            <h3>Leaderboard: titanic_preprocessed.csv</h3>
-            <table id="leaderboard-table">
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Experiment Name</th>
-                        <th>Model</th>
-                        <th>Key Metric (F1)</th>
-                        <th>Accuracy</th>
-                        <th>ROC AUC</th>
-                        <th>PR AUC</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="rank-cell"><strong>1</strong></td>
-                        <td><strong>Titanic - Random Forest (Run 1)</strong></td>
-                        <td>Random Forests</td>
-                        <td class="key-metric"><strong>0.82</strong></td>
-                        <td>0.81</td>
-                        <td>0.86</td>
-                        <td>0.81</td>
-                        <td><a href="/experiment-result/1" class="btn-action btn-view"></i> View</a></td>
-                    </tr>
-                    
-                    <tr>
-                        <td class="rank-cell"><strong>2</strong></td>
-                        <td><strong>Titanic - Logistic Regression</strong></td>
-                        <td>Logistic Regression</td>
-                        <td class="key-metric"><strong>0.79</strong></td>
-                        <td>0.78</td>
-                        <td>0.84</td>
-                        <td>0.79</td>
-                        <td><a href="/experiment-result/2" class="btn-action btn-view"></i> View</a></td>
-                    </tr>
+            {% if data.classification %}
+            <div class="leaderboard">
+                <h3>Classification Leaderboard (Ranked by ROC-AUC)</h3>
+                <div class="chart-container" style="height: 300px; margin-bottom: 30px;">
+                    <canvas id="chart-class-{{ dataset_id }}"></canvas>
+                </div>
 
-                    <tr>
-                        <td class="rank-cell"><strong>3</strong></td>
-                        <td><strong>Titanic - SVM (Run 2)</strong></td>
-                        <td>SVM</td>
-                        <td class="key-metric"><strong>0.77</strong></td>
-                        <td>0.77</td>
-                        <td>0.82</td>
-                        <td>0.78</td>
-                        <td><a href="/experiment-result/3" class="btn-action btn-view"></i> View</a></td>
-                    </tr>
-                    
-                </tbody>
-            </table>
-        </section>
-
-        <section class="visualization-card">
-            <h3>Metric Comparison (F1-Score)</h3>
-            <div class="plot-placeholder">
-                <span>Bar Chart Comparing F1-Scores for All Models</span>
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Experiment Name</th>
+                            <th>Model</th>
+                            <th>ROC-AUC</th>
+                            <th>Accuracy</th>
+                            <th>PR-AUC</th>
+                            <th>F1-Score</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exp in data.classification %}
+                        <tr>
+                            <td><strong>{{ loop.index }}</strong></td>
+                            <td>{{ exp.name }}</td>
+                            <td>{{ exp.model_type.replace('_', ' ').title() }}</td>
+                            <td><strong>{{"%.4f".format(exp.metrics.roc_auc)}}</strong></td>
+                            <td>{{"%.2f".format(exp.metrics.accuracy * 100)}}%</td>
+                            <td>{{"%.4f".format(exp.metrics.pr_auc)}}</td>
+                            <td>{{"%.4f".format(exp.metrics.f1_score)}}</td>
+                            <td>
+                                <a href="{{ url_for('experiment_detail', experiment_id=exp.id) }}" class="btn-action btn-view">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+            {% endif %}
         </section>
-
+        {% endfor %}
     </main>
+
+    <script>
+        (function() {
+            const chartColors = [
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(75, 192, 192, 0.8)',
+                'rgba(255, 206, 86, 0.8)',
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(153, 102, 255, 0.8)',
+                'rgba(255, 159, 64, 0.8)'
+            ];
+
+            {% for dataset_id, data in comparisons.items() %}
+                
+                {% if data.regression %}
+                try {
+                    const ctxReg = document.getElementById('chart-reg-{{ dataset_id }}').getContext('2d');
+                    new Chart(ctxReg, {
+                        type: 'bar',
+                        data: {
+                            labels: [ {% for exp in data.regression %} '{{ exp.name | e }} ({{ exp.model_type.replace("_", " ").title() }})', {% endfor %} ],
+                            datasets: [{
+                                label: 'R-squared (R²)',
+                                data: [ {% for exp in data.regression %} {{ exp.metrics.r2_score or 'null' }}, {% endfor %} ],
+                                backgroundColor: chartColors,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            indexAxis: 'y',
+                            scales: { x: { beginAtZero: false, min: 0, max: 1, title: { display: true, text: 'R² Score' } } },
+                            plugins: { legend: { display: false }, title: { display: true, text: 'Regression Model R² Score' } }
+                        }
+                    });
+                } catch (e) { console.error('Error rendering regression chart:', e); }
+                {% endif %}
+
+                {% if data.classification %}
+                try {
+                    const ctxClass = document.getElementById('chart-class-{{ dataset_id }}').getContext('2d');
+                    new Chart(ctxClass, {
+                        type: 'bar',
+                        data: {
+                            labels: [ {% for exp in data.classification %} '{{ exp.name | e }} ({{ exp.model_type.replace("_", " ").title() }})', {% endfor %} ],
+                            datasets: [{
+                                label: 'ROC-AUC Score',
+                                data: [ {% for exp in data.classification %} {{ exp.metrics.roc_auc or 'null' }}, {% endfor %} ],
+                                backgroundColor: chartColors,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            indexAxis: 'y',
+                            scales: { x: { beginAtZero: false, min: 0, max: 1, title: { display: true, text: 'ROC-AUC Score' } } },
+                            plugins: { legend: { display: false }, title: { display: true, text: 'Classification Model ROC-AUC' } }
+                        }
+                    });
+                } catch (e) { console.error('Error rendering classification chart:', e); }
+                {% endif %}
+
+            {% endfor %}
+        })();
+    </script>
+
 </body>
 </html>
