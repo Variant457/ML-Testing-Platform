@@ -1,7 +1,19 @@
 import pandas as pd
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+from sklearn.metrics import (
+    mean_squared_error, 
+    mean_absolute_error, 
+    r2_score, 
+    accuracy_score, 
+    precision_score,
+    recall_score, 
+    f1_score, 
+    roc_auc_score,
+    roc_curve,
+    precision_recall_curve,
+    auc
+)
 from utils import load_dataset
 
 AVAILABLE_MODELS = {
@@ -84,28 +96,31 @@ def run_logistic_regression(dataset_obj, target_column, parameters):
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    y_proba = model.predict_proba(X_test)\
+    y_proba = model.predict_proba(X_test)
     
-    try:
-        if len(model.classes_) == 2:
-            roc_auc = roc_auc_score(y_test, y_proba[:, 1])
-        else:
-            roc_auc = roc_auc_score(y_test, y_proba, multi_class='ovo')
-    except Exception:
-        roc_auc = None
+    y_scores = y_proba[:, 1]
+    fpr, tpr, _ = roc_curve(y_test, y_scores)
+    roc_auc = auc(fpr, tpr)
 
-    accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred, average='weighted'),
-    recall = recall_score(y_test, y_pred, average='weighted'),
-    f1 = f1_score(y_test, y_pred, average='weighted'),
-    roc_auc = roc_auc
+    precision, recall, _ = precision_recall_curve(y_test, y_scores)
+    pr_auc = auc(recall, precision)
 
     metrics = {
-        'accuracy': accuracy,
-        'precision': precision,
-        'recall': recall,
-        'f1_score': f1,
+        'accuracy': accuracy_score(y_test, y_pred),
+        'precision': precision_score(y_test, y_pred, average='weighted'),
+        'recall': recall_score(y_test, y_pred, average='weighted'),
+        'f1_score': f1_score(y_test, y_pred, average='weighted'),
         'roc_auc': roc_auc,
+        'pr_auc': pr_auc,
+        'roc_curve': {
+            'fpr': fpr.tolist(),
+            'tpr': tpr.tolist()
+        },
+        'pr_curve': {
+            'precision': precision.tolist(),
+            'recall': recall.tolist()
+        },
+        'feature_coefficients': dict(zip(X.columns, model.coef_[0]))
     }
 
     return model, metrics, None

@@ -80,7 +80,7 @@
                                         {% if exp.status == 'Complete' %}
                                             <a href="{{url_for('experiment_detail', experiment_id=exp.id)}}" class="btn-action btn-view">View Results</a>
                                         {% elif exp.status == 'Failed' %}
-                                            <a href="#" class="btn-action btn-view-log">View Log</a>
+                                            <a href="{{url_for('experiment_detail', experiment_id=exp.id)}}" class="btn-action btn-view-log">View Log</a>
                                         {% else %}
                                             <a href="#" class="btn-action btn-view disabled">View Results</a>
                                         {% endif %}

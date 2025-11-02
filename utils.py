@@ -59,89 +59,117 @@ def get_data_summary(df):
         'shape': shape
     }
 
-def apply_transformations(df, form_data):
+def apply_transformations(df, request_form):
     try:
         df_transformed = df.copy()
-
-        actions = {}
+                
+        rename_map = {}
+        col_actions = {}
         cols_to_drop = []
-        for key, value in form_data.items():
-            if not value:
-                continue
-            
-            action, col_name = key.split('-', 1)
-            if action == 'drop':
-                cols_to_drop.append(col_name)
-                continue
 
-            if col_name not in actions:
-                actions[col_name] = {}
-            actions[col_name][action] = value
+        for key, new_name in request_form.items():
+            if key.startswith('col_rename__'):
+                orig_name = key.split('__')[1]
+                if new_name != orig_name and new_name:
+                    if new_name in rename_map.values():
+                        raise ValueError(f"Duplicate column name: '{new_name}' is used more than once.")
+                    rename_map[orig_name] = new_name
 
-        if cols_to_drop:
-            df_transformed = df_transformed.drop(columns=cols_to_drop)
-            for col in cols_to_drop:
-                actions.pop(col, None)
+        for key, value in request_form.items():
+            if key.startswith('col_action__'):
+                parts = key.split('__')
+                if len(parts) == 3:
+                    orig_name = parts[1]
+                    action_type = parts[2]
+                    
+                    if orig_name not in col_actions:
+                        col_actions[orig_name] = {}
+                    
+                    if action_type == 'drop' and value == 'on':
+                        cols_to_drop.append(orig_name)
+                    elif action_type != 'drop' and value:
+                        col_actions[orig_name][action_type] = value
 
-        cols_to_add = []
+        df_transformed = df_transformed.rename(columns=rename_map)
+        
         cols_to_remove_after_encoding = []
-        for col_name, col_acts in actions.items():
-            if 'impute' in col_acts:
-                method = col_acts['impute']
+        cols_to_add = []
 
-                if col_name not in df_transformed.columns:
-                    continue
+        for orig_name, actions in col_actions.items():
+            col_name = rename_map.get(orig_name, orig_name)
 
-                if method == 'drop_row':
-                    df_transformed = df_transformed.dropna(subset=[col_name])
-                    continue
+            if orig_name in cols_to_drop:
+                continue
+                
+            if col_name not in df_transformed.columns:
+                continue
 
-                if method in ['mean', 'median', 'mode']:
-                    imputer = SimpleImputer(strategy=method)
-                    df_transformed[col_name] = imputer.fit_transform(df_transformed[[col_name]])
-            if 'scale' in col_acts:
-                scale_method = col_acts['scale']
+            if 'impute' in actions:
+                impute_method = actions['impute']
+                imputer = None
+                if impute_method == 'mean':
+                    if pd.api.types.is_numeric_dtype(df_transformed[col_name]):
+                        imputer = SimpleImputer(strategy='mean')
+                    else:
+                        imputer = SimpleImputer(strategy='most_frequent')
+                elif impute_method == 'median':
+                    if pd.api.types.is_numeric_dtype(df_transformed[col_name]):
+                        imputer = SimpleImputer(strategy='median')
+                    else:
+                        imputer = SimpleImputer(strategy='most_frequent')
+                elif impute_method == 'mode':
+                    imputer = SimpleImputer(strategy='most_frequent')
+                
+                if imputer:
+                    df_transformed[[col_name]] = imputer.fit_transform(df_transformed[[col_name]])
 
-                if col_name not in df_transformed.columns:
-                    continue
-
-                if not pd.api.types.is_numeric_dtype(df_transformed[col_name]):
-                    return None, f"Cannot apply scaling to non-numeric column '{col_name}'."
-
+            if 'scale' in actions:
+                scale_method = actions['scale']
                 scaler = None
-                if scale_method == 'standardize':
+                if scale_method == 'standard':
                     scaler = StandardScaler()
-                elif scale_method == 'normalize':
+                elif scale_method == 'min_max':
                     scaler = MinMaxScaler()
 
                 if scaler:
-                    df_transformed[col_name] = scaler.fit_transform(df_transformed[[col_name]])
-            if 'encode' in col_acts:
-                encode_method = col_acts['encode']
+                    if pd.api.types.is_numeric_dtype(df_transformed[col_name]):
+                        df_transformed[col_name] = scaler.fit_transform(df_transformed[[col_name]])
+                    else:
+                        pass
 
-                if col_name not in df_transformed.columns:
-                    continue
-
+            if 'encode' in actions:
+                encode_method = actions['encode']
+                
                 if encode_method == 'label':
                     le = LabelEncoder()
                     df_transformed[col_name] = le.fit_transform(df_transformed[col_name])
                 elif encode_method == 'one_hot':
                     encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+                    
+                    df_transformed[col_name] = df_transformed[col_name].astype(str)
+                    
                     new_cols_array = encoder.fit_transform(df_transformed[[col_name]])
-                    new_cols_names = encoder.get_feature_names_out([col_name])
+                    new_cols_names = encoder.get_feature_names_out([col_name]) 
                     new_cols_df = pd.DataFrame(
                         new_cols_array,
                         columns=new_cols_names,
                         index=df_transformed.index
                     )
-
                     cols_to_add.append(new_cols_df)
                     cols_to_remove_after_encoding.append(col_name)
-        
+        if cols_to_remove_after_encoding:
+            df_transformed = df_transformed.drop(columns=cols_to_remove_after_encoding)
+            
         if cols_to_add:
             df_transformed = pd.concat([df_transformed] + cols_to_add, axis=1)
-            df_transformed = df_transformed.drop(columns=cols_to_remove_after_encoding)
+
+        if cols_to_drop:
+            renamed_cols_to_drop = [rename_map.get(col, col) for col in cols_to_drop]
+            renamed_cols_to_drop = [col for col in renamed_cols_to_drop if col in df_transformed.columns]
+            if renamed_cols_to_drop:
+                df_transformed = df_transformed.drop(columns=renamed_cols_to_drop)
 
         return df_transformed, None
+        
     except Exception as e:
-        return None, f"An error occurred during preprocessing: {str(e)}"
+        return None, f"Error applying transformations: {str(e)}"

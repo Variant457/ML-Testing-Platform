@@ -29,7 +29,7 @@ class Dataset(db.Model):
     filename = db.Column(db.String(300), nullable=False)
     filepath = db.Column(db.String(500), nullable=False)
     status = db.Column(db.String(100), nullable=False, default='Raw')
-    uploaded_at = db.Column(db.DateTime, nullable=False, default=datetime.now(timezone.utc))
+    uploaded_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
     filesize = db.Column(db.Integer, nullable=False)
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -58,7 +58,7 @@ class Experiment(db.Model):
 
     parameters = db.Column(JSON, nullable=False)
     metrics = db.Column(JSON, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'), nullable=False)

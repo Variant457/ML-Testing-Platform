@@ -48,7 +48,7 @@
                         <thead>
                             <tr>
                                 <th>Column Name</th>
-                                <th>Data Type</th>
+                                <th>New Name</th> <th>Data Type</th>
                                 <th>Missing Values</th>
                                 <th>Handle Missing (Impute)</th>
                                 <th>Scale (Numeric Only)</th>
@@ -60,6 +60,13 @@
                             {% for col in data_summary.columns_info %}
                             <tr>
                                 <td><strong>{{ col.name }}</strong></td>
+                                <td>
+                                    <input type="text"
+                                        name="col_rename__{{ col.name }}"
+                                        value="{{ col.name }}"
+                                        class="rename-input"
+                                        aria-label="New name for {{col.name}}">
+                                </td>
                                 <td>{{ col.dtype }}</td>
                                 <td>{{ col.missing_count }} ({{ col.missing_percent }})</td>
                                 
