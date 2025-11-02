@@ -7,6 +7,8 @@
     
     <link rel="stylesheet" href="{{url_for('static', filename='experiment-result.css')}}">
     <link rel="stylesheet" href="{{url_for('static', filename='datasets.css')}}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -90,28 +92,40 @@
                 <span class="stat-number">{{ "{:.4f}".format(experiment.metrics.roc_auc) }}</span>
             </div>
             {% endif %}
+            {% if experiment.metrics.pr_auc %}
+            <div class="metric-card">
+                <span class="stat-label">PR AUC</span>
+                <span class="stat-number">{{ "{:.4f}".format(experiment.metrics.pr_auc) }}</span>
+            </div>
+            {% endif %}
         </section>
         {%endif %}
         
         {% if 'feature_coefficients' in experiment.metrics %}
         <section class="visualizations-grid">
 
-            <div class="visualization-card" style="grid-column: 1 / -1;"> <h3>Feature Coefficients</h3></div>
-            <table class="metrics-table">
-                <thead>
-                    <tr>
-                        <th>Feature</th>
-                        <th>Coefficient</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for feature, coeff in experiment.metrics.feature_coefficients.items() %}
-                    <tr>
-                        <td><strong>{{ feature }}</strong></td>
-                        <td>{{ "{:.5f}".format(coeff) }}</td>
-                    </tr>
-                    {% endfor %}
-            </table>
+            <div class="visualization-card" style="grid-column: 1 / -1;"> 
+                <h3>Feature Coefficients</h3>
+                <div class="chart-container">
+                    <canvas id="featureCoefficientsChart"></canvas>
+                </div>
+            </div>
+            {% if 'roc_curve' in experiment.metrics %}
+            <div class="visualization-card" style="grid-column: 1 / -1;">
+                <h3>ROC Curve (Area = {{ "{:.4f}".format(experiment.metrics.roc_auc) }})</h3>
+                <div class="chart-container">
+                    <canvas id="rocCurveChart"></canvas>
+                </div>
+            </div>
+            {% endif %}
+            {% if 'pr_curve' in experiment.metrics %}
+            <div class="visualization-card" style="grid-column: 1 / -1;">
+                <h3>PR Curve</h3>
+                <div class="chart-container">
+                    <canvas id="prCurveChart"></canvas>
+                </div>
+            </div>
+            {% endif %}
         </section>
         {% endif %}
 
@@ -124,5 +138,112 @@
         {% endif %}
 
     </main>
+
+    <script>
+        (function() {
+            function zipData(x_data, y_data) {
+                return x_data.map((x, i) => ({ x: x, y: y_data[i] }));
+            }
+
+            {% if 'feature_coefficients' in experiment.metrics %}
+            try {
+                const ctxCoeff = document.getElementById('featureCoefficientsChart').getContext('2d');
+                const coeffData = {{ experiment.metrics.feature_coefficients | tojson }};
+                const coeffLabels = Object.keys(coeffData);
+                const coeffValues = Object.values(coeffData);
+
+                new Chart(ctxCoeff, {
+                    type: 'bar',
+                    data: {
+                        labels: coeffLabels,
+                        datasets: [{
+                            label: 'Coefficient Value',
+                            data: coeffValues,
+                            backgroundColor: coeffValues.map(v => v > 0 ? 'rgba(75, 192, 192, 0.6)' : 'rgba(255, 99, 132, 0.6)'),
+                            borderColor: coeffValues.map(v => v > 0 ? 'rgba(75, 192, 192, 1)' : 'rgba(255, 99, 132, 1)'),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: false, title: { display: true, text: 'Coefficient Value' } },
+                            x: { title: { display: true, text: 'Features' } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            } catch (e) { console.error('Error rendering coefficient chart:', e); }
+            {% endif %}
+
+            {% if 'roc_curve' in experiment.metrics %}
+            try {
+                const ctxRoc = document.getElementById('rocCurveChart').getContext('2d');
+                const rocData = {{ experiment.metrics.roc_curve | tojson }};
+                const rocChartData = zipData(rocData.fpr, rocData.tpr);
+
+                new Chart(ctxRoc, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: 'ROC Curve',
+                            data: rocChartData,
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: 'origin'
+                        }, {
+                            label: 'No-Skill Line',
+                            data: [{x: 0, y: 0}, {x: 1, y: 1}],
+                            borderColor: 'rgba(255, 99, 132, 0.5)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            borderDash: [5, 5]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { type: 'linear', position: 'bottom', title: { display: true, text: 'False Positive Rate' }, min: 0, max: 1 },
+                            y: { title: { display: true, text: 'True Positive Rate' }, min: 0, max: 1 }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+
+                const ctxPr = document.getElementById('prCurveChart').getContext('2d');
+                const prData = {{ experiment.metrics.pr_curve | tojson }};
+                const prChartData = zipData(prData.recall, prData.precision);
+
+                new Chart(ctxPr, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: 'Precision-Recall Curve',
+                            data: prChartData,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: 'origin'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { type: 'linear', position: 'bottom', title: { display: true, text: 'Recall' }, min: 0, max: 1 },
+                            y: { title: { display: true, text: 'Precision' }, min: 0, max: 1 }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            } catch (e) { console.error('Error rendering classification charts:', e); }
+            {% endif %}
+        })();
+    </script>
 </body>
 </html>
