@@ -12,6 +12,6 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
-    ALLOWED_EXTENSIONS = {'txt', 'csv', 'xlsx'}
+    ALLOWED_EXTENSIONS = {'txt', 'csv', 'xlsx', 'data'}
 
     PERMANENT_SESSION_LIFETIME = timedelta(minutes=10)

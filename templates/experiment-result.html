@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ML Platform - Experiment Result</title>
+    <title>ML Platform - {{ experiment.name }}</title>
     
-    <link rel="stylesheet" href="../static/experiment-result.css">
+    <link rel="stylesheet" href="{{url_for('static', filename='experiment-result.css')}}">
+    <link rel="stylesheet" href="{{url_for('static', filename='datasets.css')}}">
 </head>
 <body>
 
@@ -23,7 +24,7 @@
     <main id="main-content">
 
         <header class="top-bar">
-            <h2>Experiment: Titanic - Random Forest (Run 1)</h2>
+            <h2>Experiment: {{ experiment.name }}</h2>
             <div class="user-info">
                 <span>Welcome, {{ current_user.username }}!</span>
                 <a href="/logout" class="logout-button">Logout</a>
@@ -33,123 +34,94 @@
         <section class="config-card summary-card">
             <h3></i> Experiment Summary</h3>
             <ul>
-                <li><strong>Dataset:</strong> titanic_preprocessed.csv</li>
-                <li><strong>Model:</strong> Random Forests</li>
-                <li><strong>Target Variable:</strong> Survived (Classification)</li>
-                <li><strong>Evaluation:</strong> 5-Fold Cross-Validation</li>
-                <li><strong>Status:</strong> <span class="status-badge status-complete">Complete</span></li>
+                <li><strong>Dataset:</strong> {{ experiment.dataset.filename }}</li>
+                <li><strong>Model:</strong> {{ experiment.model_type.replace('_', ' ').title() }}</li>
+                <li><strong>Target Variable:</strong> {{ experiment.target_variable }}</li>
+                <li><strong>Created:</strong> {{ experiment.created_at.strftime('%b %d %Y, %H:%M') }}</li>
+                <li><strong>Status:</strong> <span class="status-badge status-{{ experiment.status.lower() }}">{{ experiment.status }}</span></li>
+                {% if experiment.parameters %}
+                    <li><strong>Hyperparameters:</strong>
+                        {% for key, value in experiment.parameters.items() %}
+                            <span>{{ key }}: {{ value }};</span>
+                        {% endfor %}
+                    </li>
+                {% endif %}
             </ul>
         </section>
 
+        {% if 'mse' in experiment.metrics %}
+        <section class="key-metrics-grid">
+            <div class="metric-card">
+                <span class="stat-label">Mean Squared Error</span>
+                <span class="stat-number">{{ "{:.4f}".format(experiment.metrics.mse) }}</span>
+            </div>
+            <div class="metric-card">
+                <span class="stat-label">Mean Absolute Error</span>
+                <span class="stat-number">{{ "{:.4f}".format(experiment.metrics.mae) }}</span>
+            </div>
+            <div class="metric-card">
+                <span class="stat-label">R-Squared</span>
+                <span class="stat-number">{{ "{:.4f}".format(experiment.metrics.r2_score) }}</span>
+            </div>
+        </section>
+        {% endif %}
+
+        {% if 'accuracy' in experiment.metrics %}
         <section class="key-metrics-grid">
             <div class="metric-card">
                 <span class="stat-label">Accuracy</span>
-                <span class="stat-number">81.12%</span>
+                <span class="stat-number">{{ "{:.2f}".format(experiment.metrics.accuracy * 100) }}%</span>
+            </div>
+            <div class="metric-card">
+                <span class="stat-label">Precision (Weighted)</span>
+                <span class="stat-number">{{ "{:.4f}".format(experiment.metrics.precision) }}</span>
+            </div>
+            <div class="metric-card">
+                <span class="stat-label">Recall (Weighted)</span>
+                <span class="stat-number">{{ "{:.4f}".format(experiment.metrics.recall) }}</span>
             </div>
             <div class="metric-card">
                 <span class="stat-label">F1-Score (Weighted)</span>
-                <span class="stat-number">0.79</span>
+                <span class="stat-number">{{ "{:.4f}".format(experiment.metrics.f1_score) }}</span>
             </div>
+            {% if experiment.metrics.roc_auc %}
             <div class="metric-card">
                 <span class="stat-label">ROC AUC</span>
-                <span class="stat-number">0.86</span>
+                <span class="stat-number">{{ "{:.4f}".format(experiment.metrics.roc_auc) }}</span>
             </div>
-            <div class="metric-card">
-                <span class="stat-label">PR AUC</span>
-                <span class="stat-number">0.81</span>
-            </div>
+            {% endif %}
         </section>
+        {%endif %}
         
+        {% if 'feature_coefficients' in experiment.metrics %}
         <section class="visualizations-grid">
-            
-            <div class="visualization-card">
-                <h3>ROC Curve</h3>
-                <div class="plot-placeholder">
-                    <span>ROC Curve Plot</span>
-                </div>
-            </div>
 
-            <div class="visualization-card">
-                <h3>Precision-Recall Curve</h3>
-                <div class="plot-placeholder">
-                    <span>PR Curve Plot</span>
-                </div>
-            </div>
-
-            <div class="visualization-card">
-                <h3>Confusion Matrix</h3>
-                <div class="plot-placeholder">
-                    <span>Confusion Matrix Heatmap</span>
-                </div>
-            </div>
-
-            <div class="visualization-card">
-                <h3>Feature Importance</h3>
-                <div class="plot-placeholder">
-                    <span>Feature Importance Bar Chart</span>
-                </div>
-            </div>
-
-        </section>
-
-        <section class="config-card">
-            <h3></i> Detailed Classification Report</h3>
+            <div class="visualization-card" style="grid-column: 1 / -1;"> <h3>Feature Coefficients</h3></div>
             <table class="metrics-table">
                 <thead>
                     <tr>
-                        <th>Class</th>
-                        <th>Precision</th>
-                        <th>Recall</th>
-                        <th>F1-Score</th>
-                        <th>Support</th>
+                        <th>Feature</th>
+                        <th>Coefficient</th>
                     </tr>
                 </thead>
                 <tbody>
+                    {% for feature, coeff in experiment.metrics.feature_coefficients.items() %}
                     <tr>
-                        <td><strong>0 (Did Not Survive)</strong></td>
-                        <td>0.82</td>
-                        <td>0.89</td>
-                        <td>0.85</td>
-                        <td>549</td>
+                        <td><strong>{{ feature }}</strong></td>
+                        <td>{{ "{:.5f}".format(coeff) }}</td>
                     </tr>
-                    <tr>
-                        <td><strong>1 (Survived)</strong></td>
-                        <td>0.79</td>
-                        <td>0.68</td>
-                        <td>0.73</td>
-                        <td>342</td>
-                    </tr>
-                    <tr>
-                        <td><strong>---</strong></td>
-                        <td>---</td>
-                        <td>---</td>
-                        <td>---</td>
-                        <td>---</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Accuracy</strong></td>
-                        <td></td>
-                        <td></td>
-                        <td><strong>0.81</strong></td>
-                        <td>891</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Macro Avg</strong></td>
-                        <td>0.81</td>
-                        <td>0.78</td>
-                        <td>0.79</td>
-                        <td>891</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Weighted Avg</strong></td>
-                        <td>0.81</td>
-                        <td>0.81</td>
-                        <td>0.80</td>
-                        <td>891</td>
-                    </tr>
-                </tbody>
+                    {% endfor %}
             </table>
         </section>
+        {% endif %}
+
+        {% if experiment.status == 'Failed' and experiment.metrics.error %}
+        <section class="config-card">
+            <h3>Experiment Failed</h3>
+            <p>The experiment failed to run. See the error log below:</p>
+            <pre style="background: #fbe9e7; color: #d9534f; padding: 15px; border-radius: 4px; white-space: pre-wrap;">{{ experiment.metrics.error }}</pre>
+        </section>
+        {% endif %}
 
     </main>
 </body>

@@ -54,6 +54,7 @@ class Experiment(db.Model):
     name = db.Column(db.String(300), nullable=False)
     status = db.Column(db.String(100), nullable=False, default='Running')
     model_type = db.Column(db.String(100), nullable=False)
+    target_variable = db.Column(db.String(100), nullable=False)
 
     parameters = db.Column(JSON, nullable=False)
     metrics = db.Column(JSON, nullable=True)

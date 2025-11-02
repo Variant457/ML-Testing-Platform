@@ -7,7 +7,7 @@ from config import Config
 from models import db, bcrypt, User, Dataset, Experiment
 from werkzeug.utils import secure_filename
 from utils import load_dataset, get_data_summary, apply_transformations
-from ml_models import AVAILABLE_MODELS, run_linear_regression
+from ml_models import AVAILABLE_MODELS, run_linear_regression, run_logistic_regression
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -273,6 +273,7 @@ def start_training():
     new_experiment.user_id = current_user.id
     new_experiment.dataset_id = dataset.id
     new_experiment.model_type = model_type
+    new_experiment.target_variable = target_variable
     new_experiment.parameters = {}
 
     db.session.add(new_experiment)
@@ -280,10 +281,28 @@ def start_training():
 
     try:
         if model_type == 'linear_regression':
-            hyperparameters = {'fit_intercept': request.form.get('lr_fit_intercept') == 'true'}
+            hyperparameters = {'fit_intercept': request.form.get('lr_fit_intercept') == 'True'}
             new_experiment.parameters = hyperparameters
 
             model, metrics, error = run_linear_regression(dataset, target_variable, hyperparameters)
+            if error:
+                raise Exception(error)
+            
+            new_experiment.status = 'Complete'
+            new_experiment.metrics = metrics
+            db.session.commit()
+
+            flash(f'Experiment "{exp_name}" completed successfully!', 'success')
+            return redirect(url_for('experiments'))
+        elif model_type == 'logistic_regression':
+            hyperparameters = {
+                'penalty': request.form.get('logreg_penalty'),
+                'C': request.form.get('logr_c', 1.0),
+            }
+            new_experiment.parameters = hyperparameters
+
+            model, metrics, error = run_logistic_regression(dataset, target_variable, hyperparameters)
+
             if error:
                 raise Exception(error)
             
@@ -311,12 +330,18 @@ def start_training():
 @app.route('/experiments')
 @login_required
 def experiments():
-    return render_template('experiments.html')
+    user_experiments = Experiment.query.filter_by(user_id=current_user.id).order_by(Experiment.created_at.desc()).all()
+    return render_template('experiments.html', experiments=user_experiments)
 
 @app.route('/experiment/<int:experiment_id>')
 @login_required
 def experiment_detail(experiment_id):
-    return render_template('experiment_detail.html', experiment_id=experiment_id)
+    experiment = Experiment.query.get_or_404(experiment_id)
+    if experiment.owner != current_user:
+        flash('You do not have permission to view this experiment.', 'danger')
+        return redirect(url_for('experiments'))
+
+    return render_template('experiment-result.html', experiment=experiment)
 
 @app.route('/compare')
 @login_required

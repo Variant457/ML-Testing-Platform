@@ -16,6 +16,15 @@ def load_dataset(dataset):
             df = pd.read_excel(filepath)
         elif filename.endswith('.txt'):
             df = pd.read_csv(filepath, delimiter=r'\s+|,', engine='python')
+        elif filename.endswith('.data'):
+            df = pd.read_csv(
+                filepath,
+                delimiter=r'\s+|,',
+                engine='python',
+                header=None
+            )
+
+            df.columns = [f"Feature_{i}" for i in range(df.shape[1])]
         else:
             raise ValueError("Unsupported file format")
         return df, None

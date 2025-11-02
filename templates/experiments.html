@@ -43,66 +43,58 @@
                         <th>Model</th>
                         <th>Dataset</th>
                         <th>Key Metric</th>
+                        <th>Created</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td><strong>Titanic - Random Forest (Run 1)</strong></td>
-                        <td><span class="status-badge status-complete">Complete</span></td>
-                        <td>Random Forests</td>
-                        <td>titanic_preprocessed.csv</td>
-                        <td>F1: 0.82</td>
-                        <td>
-                            <div class="action-buttons">
-                                <a href="/experiment-result/1" class="btn-action btn-view"></i> View Results</a>
-                                <a href="/delete/exp/1" class="btn-action btn-delete"></i> Delete</a>
-                            </div>
-                        </td>
-                    </tr>
-                    
-                    <tr>
-                        <td><strong>House Prices - DNN (Run 1)</strong></td>
-                        <td><span class="status-badge status-running">Running</span></td>
-                        <td>User-Defined DNN</td>
-                        <td>house_prices_preprocessed.csv</td>
-                        <td>N/A</td>
-                        <td>
-                            <div class="action-buttons">
-                                <a href="#" class="btn-action btn-view disabled"></i> View Results</a>
-                                <a href="/delete/exp/2" class="btn-action btn-delete"></i> Delete</a>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td><strong>House Prices - Linear Regression</strong></td>
-                        <td><span class="status-badge status-complete">Complete</span></td>
-                        <td>Linear Regression</td>
-                        <td>house_prices_preprocessed.csv</td>
-                        <td>MSE: 12045.2</td>
-                        <td>
-                            <div class="action-buttons">
-                                <a href="/experiment-result/3" class="btn-action btn-view"></i> View Results</a>
-                                <a href="/delete/exp/3" class="btn-action btn-delete"></i> Delete</a>
-                            </div>
-                        </td>
-                    </tr>
-                    
-                    <tr>
-                        <td><strong>Titanic - SVM (Run 1)</strong></td>
-                        <td><span class="status-badge status-failed">Failed</span></td>
-                        <td>SVM</td>
-                        <td>titanic_preprocessed.csv</td>
-                        <td>N/A</td>
-                        <td>
-                            <div class="action-buttons">
-                                <a href="/log/4" class="btn-action btn-view-log"></i> View Log</a>
-                                <a href="/delete/exp/4" class="btn-action btn-delete"></i> Delete</a>
-                            </div>
-                        </td>
-                    </tr>
-                    
+                    {% if experiments %}
+                        {% for exp in experiments %}
+                            <tr>
+                                <td><strong>{{ exp.name }}</strong></td>
+                                <td>
+                                    <span class="status-badge status-{{exp.status.lower()}}">{{ exp.status }}</span>
+                                </td>
+                                <td>{{ exp.model_type.replace('_', ' ').title() }}</td>
+                                <td>{{ exp.dataset.filename }}</td>
+                                <td>
+                                    {% if exp.status == 'Complete' and exp.metrics %}
+                                        {% if 'r2_score' in exp.metrics %}
+                                            R-square: {{ '%.4f'|format(exp.metrics['r2_score']) }}
+                                        {% elif 'mse' in exp.metrics %}
+                                            MSE: {{ '%.2f'|format(exp.metrics['mse']) }}
+                                        {% elif 'accuracy' in exp.metrics %}
+                                            Acc: {{ '%.2f'|format(exp.metrics.accuracy * 100) }}%
+                                        {% else %}
+                                            --
+                                        {% endif %}
+                                    {% elif exp.status == 'Failed' %}
+                                        N/A
+                                    {% else %}
+                                        --
+                                    {% endif %}
+                                </td>
+                                <td>{{ exp.created_at.strftime('%b %d %Y %H:%M') }}</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        {% if exp.status == 'Complete' %}
+                                            <a href="{{url_for('experiment_detail', experiment_id=exp.id)}}" class="btn-action btn-view">View Results</a>
+                                        {% elif exp.status == 'Failed' %}
+                                            <a href="#" class="btn-action btn-view-log">View Log</a>
+                                        {% else %}
+                                            <a href="#" class="btn-action btn-view disabled">View Results</a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 20px;">
+                                No experiments found. <a href="{{url_for('train')}}">Train New Model</a> to get started!
+                            </td>
+                        </tr>
+                    {% endif %}
                 </tbody>
             </table>
         </section>
