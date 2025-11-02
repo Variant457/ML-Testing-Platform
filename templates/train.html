@@ -22,138 +22,191 @@
     </nav>
 
     <main id="main-content">
+        <form method="POST" action="{{ url_for('start_training') }}">
+            <header class="top-bar">
+                <h2>Train New Model</h2>
+                <div class="user-info">
+                    <span>Welcome, {{ current_user.username }}!</span>
+                    <a href="/logout" class="logout-button">Logout</a>
+                </div>
+            </header>
 
-        <header class="top-bar">
-            <h2>Train New Model</h2>
-            <div class="user-info">
-                <span>Welcome, {{ current_user.username }}!</span>
-                <a href="/logout" class="logout-button">Logout</a>
-            </div>
-        </header>
-
-        <div class="train-container">
-            
-            <section class="config-card">
-                <h3></i> Configuration</h3>
+            <div class="train-container">
                 
-                <div class="form-group">
-                    <label for="exp-name">Experiment Name</label>
-                    <input type="text" id="exp-name" value="Titanic - Random Forest (Run 1)">
-                </div>
+                <section class="config-card">
+                    <h3></i> Configuration</h3>
+                    
+                    <div class="form-group">
+                        <label for="exp-name">Experiment Name</label>
+                        <input type="text" id="exp-name" name="exp_name" value="" required>
+                    </div>
 
-                <div class="form-group">
-                    <label for="dataset-select">Select Preprocessed Dataset</label>
-                    <select id="dataset-select">
-                        {% if preprocessed_datasets %}
-                            <option value="">-- Select a dataset --</option>
-                            {% for ds in preprocessed_datasets %}
-                                <option value="{{ ds.id }}">{{ ds.filename }}</option>
-                            {% endfor %}
-                        {% else %}
-                            <option value="" disabled>No preprocessed datasets available</option>
-                        {% endif %}
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="target-select">Select Target Variable (Y)</label>
-                    <select id="target-select">
-                        <option value="Survived">Survived (Classification)</option>
-                        <option value="SalePrice">SalePrice (Regression)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="model-select">Select Model</label>
-                    <select id="model-select">
-                        <option value="rf">Random Forests</option>
-                        <option value="lr">Logistic Regression</option>
-                        <option value="svm">Support Vector Machine (SVM)</option>
-                        <option value="gb">Gradient Boosting</option>
-                        <option value="dnn">User-Defined DNN</option>
+                    <div class="form-group">
+                        <label for="dataset-select">Select Preprocessed Dataset</label>
+                        <select id="dataset-select" name="dataset_id" required>
+                            {% if preprocessed_datasets %}
+                                <option value="">-- Select a dataset --</option>
+                                {% for ds in preprocessed_datasets %}
+                                    <option value="{{ ds.id }}">{{ ds.filename }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="" disabled>No preprocessed datasets available</option>
+                            {% endif %}
                         </select>
-                </div>
-            </section>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="target-select">Select Target Variable (Y)</label>
+                        <select id="target-select" name="target_variable" required disabled>
+                            <option value="">-- Select a Dataset --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="model-select">Select Model</label>
+                        <select id="model-select" name= "model_type" required disabled>
+                            <option value="">-- Select a Target Variable --</option>
+                        </select>
+                    </div>
+                </section>
+
+                <section class="config-card">
+                    <h3></i> Hyperparameters</h3>
+                    
+                    <div class="param-set" id="no-model-params">
+                        <p>Please select a model to configure hyperparameters.</p>
+                    </div>
+
+                    <div class="param-set" id="linear_regression-params" style="display: none;">
+                        <div class="form-group">
+                            <label for="lr-fit-intercept">Fit Intercept</label>
+                            <select name="lr_fit_intercept">
+                                <option value="True" selected>Yes</option>
+                                <option value="False">No</option>
+                            </select>
+                        </div>
+                    </div>
+
+                </section>
+            </div>
 
             <section class="config-card">
-                <h3></i> Hyperparameters</h3>
+                <h3></i> Evaluation Strategy</h3>
                 
-                <div class="param-set active" id="rf-params">
-                    <div class="form-group">
-                        <label for="rf-n-estimators">N_Estimators (Number of Trees)</label>
-                        <input type="number" id="rf-n-estimators" value="100">
-                    </div>
-                    <div class="form-group">
-                        <label for="rf-max-depth">Max Depth</label>
-                        <input type="number" id="rf-max-depth" value="10">
-                    </div>
+                <div class="metrics-group" id="regression-metrics" style="display: none;">
+                    <h4>Regression Metrics</h4>
+                    <label><input type="checkbox" name="metrics" value="mae" checked> Mean Absolute Error (MAE)</label>
+                    <label><input type="checkbox" name="metrics" value="mse" checked> Mean Squared Error (MSE)</label>
+                    <label><input type="checkbox" name="metrics" value="r2" checked> R-squared (R2)</label>
                 </div>
 
-                <div class="param-set" id="lr-params">
-                    <div class="form-group">
-                        <label for="lr-c">Regularization (C)</label>
-                        <input type="number" id="lr-c" value="1.0">
-                    </div>
-                </div>
-
-                <div class="param-set" id="dnn-params">
-                    <div class="form-group">
-                        <label for="dnn-epochs">Epochs</label>
-                        <input type="number" id="dnn-epochs" value="50">
-                    </div>
-                    <div class="form-group">
-                        <label for="dnn-lr">Learning Rate</label>
-                        <input type="text" id="dnn-lr" value="0.001">
-                    </div>
-                    <label>Network Architecture</label>
-                    <ul class="layer-list">
-                        <li class="layer-item">
-                            <span>Input Layer (Auto-detected)</span>
-                        </li>
-                        <li class="layer-item">
-                            <span>Dense Layer: 64 neurons, ReLU</span>
-                            <button class="btn-remove-layer">&times;</button>
-                        </li>
-                        <li class="layer-item">
-                            <span>Dense Layer: 32 neurons, ReLU</span>
-                            <button class="btn-remove-layer">&times;</button>
-                        </li>
-                        <li class="layer-item">
-                            <span>Output Layer (Auto-detected)</span>
-                        </li>
-                    </ul>
-                    <div class="add-layer-buttons">
-                        <button class="btn-secondary">+ Add Dense Layer</button>
-                    </div>
+                <div class="metrics-group" id="classification-metrics" style="display: none;">
+                    <h4>Classification Metrics</h4>
+                    <label><input type="checkbox" name="metrics" value="accuracy" checked> Accuracy</label>
+                    <label><input type="checkbox" name="metrics" value="precision" checked> Precision</label>
+                    <label><input type="checkbox" name="metrics" value="recall" checked> Recall</label>
+                    <label><input type="checkbox" name="metrics" value="f1" checked> F1-Score</label>
+                    <label><input type="checkbox" name="metrics" value="roc_auc" checked> ROC AUC</label>
                 </div>
 
             </section>
-        </div>
-
-        <section class="config-card">
-            <h3></i> Evaluation Strategy</h3>
-            <div class="radio-group">
-                <div class="radio-option">
-                    <input type="radio" id="eval-holdout" name="eval-method" value="holdout" checked>
-                    <label for="eval-holdout">Hold-out (on Test Set)</label>
-                </div>
-                <div class="radio-option">
-                    <input type="radio" id="eval-cv" name="eval-method" value="cv">
-                    <label for="eval-cv">K-Fold Cross-Validation</label>
-                </div>
-            </div>
             
-            <div class="form-group" id="k-folds-group" style="display: none; margin-top: 15px;">
-                <label for="k-folds">Number of Folds (K)</label>
-                <input type="number" id="k-folds" value="5">
-            </div>
-        </section>
-        
-        <section class="page-actions-footer">
-            <a href="#" class="cta-button"></i> Start Training</a>
-        </section>
-
+            <section class="page-actions-footer">
+                <button type="submit" class="cta-button">Start Training</button>
+            </section>
+        </form>
     </main>
+
+    <script>
+        const ALL_MODELS = {{ all_models | tojson }};
+        let columnData = {};
+
+        const datasetSelect = document.getElementById('dataset-select');
+        const targetSelect = document.getElementById('target-select');
+        const modelSelect = document.getElementById('model-select');
+
+        datasetSelect.addEventListener('change', async (e) => {
+            const datasetId = e.target.value;
+            
+            resetTargetSelect();
+            resetModelSelect();
+            resetMetrics();
+
+            if(!datasetId) return;
+
+            try {
+                const response = await fetch(`/api/get-dataset-columns/${datasetId}`);
+                if (!response.ok) throw new Error('Failed to fetch columns');
+
+                columnData = await response.json();
+                
+                targetSelect.disabled = false;
+                targetSelect.innerHTML = '<option value="">-- Select Target Variable --</option>';
+                for (const [colName, colType] of Object.entries(columnData)) {
+                    targetSelect.innerHTML += `<option value="${colName}">${colName} (${colType})</option>`;
+                }
+            } catch (error) {
+                console.error('Error fetching dataset columns:', error);
+                alert('Error fetching dataset columns. Please try again.');
+            }
+        });
+
+        targetSelect.addEventListener('change', (e) => {
+            const selectedColumn = e.target.value;
+            resetModelSelect();
+            resetMetrics();
+
+            if(!selectedColumn) return;
+
+            const targetType = columnData[selectedColumn] === 'numeric' ? 'regression' : 'classification';
+
+            modelSelect.disabled = false;
+            modelSelect.innerHTML = '<option value="">-- Select Model --</option>';
+            for (const [modelKey, modelInfo] of Object.entries(ALL_MODELS)) {
+                if (modelInfo.type === targetType) {
+                    modelSelect.innerHTML += `<option value="${modelKey}">${modelInfo.name}</option>`;
+                }
+            }
+
+            if (targetType === 'regression') {
+                document.getElementById('regression-metrics').style.display = 'block';
+                document.getElementById('classification-metrics').style.display = 'none';
+            } else {
+                document.getElementById('regression-metrics').style.display = 'none';
+                document.getElementById('classification-metrics').style.display = 'block';
+            }
+        });
+
+        modelSelect.addEventListener('change', (e) => {
+            const selectedModelKey = e.target.value;
+            document.querySelectorAll('.param-set').forEach(div => div.style.display = 'none');
+
+            const paramDiv = document.getElementById(`${selectedModelKey}-params`);
+            if (paramDiv) {
+                paramDiv.style.display = 'block';
+            } else {
+                document.getElementById('no-model-params').style.display = 'block';
+            }
+        });
+
+        function resetTargetSelect() {
+            targetSelect.disabled = true;
+            targetSelect.innerHTML = '<option value="">-- Select a Dataset --</option>';
+            columnData = {};
+        }
+
+        function resetModelSelect() {
+            modelSelect.disabled = true;
+            modelSelect.innerHTML = '<option value="">-- Select a Target Variable --</option>';
+            document.querySelectorAll('.param-set').forEach(div => div.style.display = 'none');
+            document.getElementById('no-model-params').style.display = 'block';
+        }
+
+        function resetMetrics() {
+            document.getElementById('regression-metrics').style.display = 'none';
+            document.getElementById('classification-metrics').style.display = 'none';
+        }
+    </script>
 
 </body>
 </html>

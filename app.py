@@ -1,11 +1,13 @@
 import os
 import uuid
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+import pandas as pd
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from config import Config
-from models import db, bcrypt, User, Dataset
+from models import db, bcrypt, User, Dataset, Experiment
 from werkzeug.utils import secure_filename
 from utils import load_dataset, get_data_summary, apply_transformations
+from ml_models import AVAILABLE_MODELS, run_linear_regression
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -241,7 +243,70 @@ def train():
     preprocessed_datasets = [ds for ds in datasets if ds.status == 'Preprocessed']
     raw_datasets = [ds for ds in datasets if ds.status == 'Raw']
 
-    return render_template('train.html', preprocessed_datasets=preprocessed_datasets, raw_datasets=raw_datasets)
+    return render_template(
+        'train.html',
+        preprocessed_datasets=preprocessed_datasets,
+        raw_datasets=raw_datasets,
+        all_models=AVAILABLE_MODELS
+    )
+
+@app.route('/start-training', methods=['POST'])
+@login_required
+def start_training():
+    exp_name = request.form.get('exp_name')
+    dataset_id = request.form.get('dataset_id')
+    target_variable = request.form.get('target_variable')
+    model_type = request.form.get('model_type')
+
+    dataset = Dataset.query.get_or_404(dataset_id)
+    if dataset.owner != current_user:
+        flash('You do not have permission to use this dataset.', 'danger')
+        return redirect(url_for('train'))
+    
+    if dataset.status != 'Preprocessed':
+        flash('Selected dataset is not suitable for training.', 'danger')
+        return redirect(url_for('train'))
+
+    new_experiment = Experiment()
+    new_experiment.name = exp_name
+    new_experiment.status = 'Running'
+    new_experiment.user_id = current_user.id
+    new_experiment.dataset_id = dataset.id
+    new_experiment.model_type = model_type
+    new_experiment.parameters = {}
+
+    db.session.add(new_experiment)
+    db.session.commit()
+
+    try:
+        if model_type == 'linear_regression':
+            hyperparameters = {'fit_intercept': request.form.get('lr_fit_intercept') == 'true'}
+            new_experiment.parameters = hyperparameters
+
+            model, metrics, error = run_linear_regression(dataset, target_variable, hyperparameters)
+            if error:
+                raise Exception(error)
+            
+            new_experiment.status = 'Complete'
+            new_experiment.metrics = metrics
+            db.session.commit()
+
+            flash(f'Experiment "{exp_name}" completed successfully!', 'success')
+            return redirect(url_for('experiments'))
+        else:
+            raise Exception('Selected model type is not supported yet.')
+    except Exception as e:
+        db.session.rollback()
+        experiment_to_fail = Experiment.query.get(new_experiment.id)
+        if experiment_to_fail:
+            experiment_to_fail.status = 'Failed'
+            experiment_to_fail.metrics = {'error': str(e)}
+            db.session.commit()
+        else:
+            db.session.rollback()
+
+        flash(f'Experiment "{exp_name}" failed: {str(e)}', 'danger')
+        return redirect(url_for('train'))
 
 @app.route('/experiments')
 @login_required
@@ -257,6 +322,26 @@ def experiment_detail(experiment_id):
 @login_required
 def compare():
     return render_template('compare.html')
+
+@app.route('/api/get-dataset-columns/<int:dataset_id>')
+@login_required
+def get_dataset_columns(dataset_id):
+    dataset = Dataset.query.get_or_404(dataset_id)
+    if dataset.owner != current_user:
+        return jsonify({'error': 'Unauthorized access'}), 403
+
+    df, error = load_dataset(dataset)
+    if error:
+        return jsonify({'error': f"Could not load dataset: {error}"}), 400
+
+    columns_info = {}
+    for col in df.columns: # type: ignore
+        if pd.api.types.is_numeric_dtype(df[col]): # type: ignore
+            columns_info[col] = 'numeric'
+        else:
+            columns_info[col] = 'categorical'
+
+    return jsonify(columns_info)
 
 def main():
     with app.app_context():

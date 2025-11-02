@@ -2,6 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from flask_bcrypt import Bcrypt
 from datetime import datetime, timezone
+from sqlalchemy.types import JSON
 
 db = SQLAlchemy()
 bcrypt = Bcrypt()
@@ -47,3 +48,22 @@ class Dataset(db.Model):
             return f"{self.filesize / (1024 ** 3):.2f} GB"
         else:
             return f"{self.filesize / (1024 ** 4):.2f} TB"
+        
+class Experiment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(300), nullable=False)
+    status = db.Column(db.String(100), nullable=False, default='Running')
+    model_type = db.Column(db.String(100), nullable=False)
+
+    parameters = db.Column(JSON, nullable=False)
+    metrics = db.Column(JSON, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now(timezone.utc))
+
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'), nullable=False)
+
+    owner = db.relationship('User', backref=db.backref('experiments', lazy=True))
+    dataset = db.relationship('Dataset', backref=db.backref('experiments', lazy=True))
+
+    def __repr__(self) -> str:
+        return f"<Experiment {self.name} (Model: {self.model_type})>"
