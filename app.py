@@ -181,13 +181,6 @@ def preprocess(dataset_id):
         flash(f"Could not load dataset: {error}", 'danger')
         return redirect(url_for('datasets'))
     
-    if request.method == 'POST':
-        df_for_transform = df.copy() #type: ignore
-        transformed_df, error = apply_transformations(df_for_transform, request.form)
-        if error:
-            flash(f"Could not apply transformations: {error}", 'danger')
-            return redirect(url_for('preprocess', dataset_id=dataset_id))
-
     data_summary = get_data_summary(df)
     return render_template('preprocess.html', dataset=dataset, data_summary=data_summary)
 
@@ -211,11 +204,11 @@ def apply_preprocess(dataset_id):
         return redirect(url_for('preprocess', dataset_id=dataset_id))
 
     try:
-        new_filename = f"{uuid.uuid4().hex}.{original_dataset.filepath.rsplit('.', 1)[1]}"
+        new_filename = f"{uuid.uuid4().hex}.csv"
         new_save_path = os.path.join(app.config['UPLOAD_FOLDER'], new_filename)
 
         base_name = os.path.splitext(original_dataset.filename)[0]
-        new_display_name = f"{base_name}_preprocessed.{original_dataset.filename.rsplit('.', 1)[1]}"
+        new_display_name = f"{base_name}_preprocessed.csv"
 
         transformed_df.to_csv(new_save_path, index=False)
         new_filesize = os.path.getsize(new_save_path)

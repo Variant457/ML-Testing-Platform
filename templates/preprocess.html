@@ -72,7 +72,7 @@
                                 
                                 <td>
                                     {% if col.missing_count > 0 %}
-                                    <select name="impute-{{ col.name }}">
+                                    <select name="col_action__{{ col.name }}__impute">
                                         <option value="">None</option>
                                         {% if col.is_numeric %}
                                         <option value="mean">Mean</option>
@@ -80,7 +80,6 @@
                                         {% else %}
                                         <option value="mode">Mode</option>
                                         {% endif %}
-                                        <option value="drop_row">Drop Row</option>
                                     </select>
                                     {% else %}
                                     <span class="na-text">N/A</span>
@@ -89,7 +88,7 @@
                                 
                                 <td>
                                     {% if col.is_numeric %}
-                                    <select name="scale-{{ col.name }}">
+                                    <select name="col_action__{{ col.name }}__scale">
                                         <option value="">None</option>
                                         <option value="standardize" selected>Standard Scaler (Z-score)</option>
                                         <option value="normalize">Min-Max Scaler (0 to 1)</option>
@@ -101,7 +100,7 @@
                                 
                                 <td>
                                     {% if not col.is_numeric %}
-                                    <select name="encode-{{ col.name }}">
+                                    <select name="col_action__{{ col.name }}__encode">
                                         <option value="">None</option>
                                         <option value="one_hot" selected>One-Hot Encode</option>
                                         <option value="label">Label Encode (as int)</option>
@@ -112,7 +111,7 @@
                                 </td>
 
                                 <td>
-                                    <input type="checkbox" name="drop-{{ col.name }}" value="drop">
+                                    <input type="checkbox" name="col_action__{{ col.name }}__drop" value="on">
                                 </td>
                             </tr>
                             {% endfor %}

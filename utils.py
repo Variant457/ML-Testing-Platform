@@ -1,6 +1,5 @@
 import os
 import pandas as pd
-import numpy as np
 from flask import current_app
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, OneHotEncoder, LabelEncoder
@@ -26,10 +25,15 @@ def load_dataset(dataset):
                     engine='python',
                 )
 
-                if not all(pd.api.types.is_numeric_dtype(temp_df[col]) for col in temp_df.columns):
+                is_header_non_numeric = not all(str(col).isnumeric() for col in temp_df.columns)
+                if is_header_non_numeric:
                     df = temp_df
                 else:
-                    raise ValueError("No header detected, trying again with header=None")
+                    is_data_all_numeric = all(pd.api.types.is_numeric_dtype(temp_df[col]) for col in temp_df.columns)
+                    if not is_data_all_numeric:
+                        df = temp_df
+                    else:
+                        raise ValueError("Numeric Header and Numeric Data detected, reloading without header.")
             except ValueError:
                 df = pd.read_csv(
                 filepath,
