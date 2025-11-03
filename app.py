@@ -319,7 +319,12 @@ def start_training():
         return redirect(url_for('train'))
     
     if dataset.status != 'Preprocessed':
-        flash('Selected dataset is not suitable for training.', 'danger')
+        flash('Selected dataset is not suitable for training. Please preprocess it first.', 'danger')
+        return redirect(url_for('train'))
+
+    df, error = load_dataset(dataset)
+    if error:
+        flash(f'Error loading dataset: {error}', 'danger')
         return redirect(url_for('train'))
 
     new_experiment = Experiment()
@@ -330,45 +335,39 @@ def start_training():
     new_experiment.model_type = model_type
     new_experiment.target_variable = target_variable
     new_experiment.parameters = {}
+    
+    try:
+        db.session.add(new_experiment)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error creating experiment: {str(e)}', 'danger')
+        return redirect(url_for('train'))
 
     try:
-        df = pd.read_csv(dataset.filepath)
-
-        if target_variable not in df.columns:
-            flash(f'Target variable "{target_variable}" not found in dataset.', 'danger')
-            return redirect(url_for('train'))
+        if target_variable not in df.columns: # type: ignore
+            raise Exception(f'Target variable "{target_variable}" not found in dataset.')
         
-        X = df.drop(columns=[target_variable])
-        y = df[target_variable]
+        X = df.drop(columns=[target_variable]) # type: ignore
+        y = df[target_variable] # type: ignore
+        
+        model_func = None
+        
+        from ml_models import run_linear_regression, run_logistic_regression, run_dnn_classifier_pytorch, run_dnn_regressor_pytorch
 
         if model_type == 'linear_regression':
             hyperparameters = {'fit_intercept': request.form.get('lr_fit_intercept') == 'True'}
             new_experiment.parameters = hyperparameters
+            model_func = run_linear_regression
 
-            model, metrics, error = run_linear_regression(X, y, hyperparameters)
-            if error:
-                raise Exception(error)
-            
-            new_experiment.status = 'Complete'
-            new_experiment.metrics = metrics
-
-            flash(f'Experiment "{exp_name}" completed successfully!', 'success')
         elif model_type == 'logistic_regression':
             hyperparameters = {
-                'penalty': request.form.get('logreg_penalty'),
+                'penalty': request.form.get('logr_penalty'),
                 'C': request.form.get('logr_c', 1.0),
             }
             new_experiment.parameters = hyperparameters
+            model_func = run_logistic_regression
 
-            model, metrics, error = run_logistic_regression(X, y, hyperparameters)
-
-            if error:
-                raise Exception(error)
-            
-            new_experiment.status = 'Complete'
-            new_experiment.metrics = metrics
-
-            flash(f'Experiment "{exp_name}" completed successfully!', 'success')
         elif model_type == 'dnn_classifier_pytorch': 
             hyperparameters = {
                 'hidden_layer_sizes_str': request.form.get('dnn_hidden_layers'),
@@ -378,10 +377,31 @@ def start_training():
                 'alpha': request.form.get('dnn_alpha')
             }
             new_experiment.parameters = hyperparameters
+            model_func = run_dnn_classifier_pytorch
+            
+        elif model_type == 'dnn_regressor_pytorch':
+            hyperparameters = {
+                'hidden_layer_sizes_str': request.form.get('dnn_hidden_layers'),
+                'activation': request.form.get('dnn_activation'),
+                'max_iter': request.form.get('dnn_max_iter'),
+                'learning_rate_init': request.form.get('dnn_learning_rate'),
+                'alpha': request.form.get('dnn_alpha')
+            }
+            new_experiment.parameters = hyperparameters
+            model_func = run_dnn_regressor_pytorch
+            
         else:
             raise Exception('Selected model type is not supported yet.')
         
-        db.session.add(new_experiment)
+        model, metrics, error = model_func(X, y, hyperparameters)
+
+        if error:
+            raise Exception(error)
+        
+        new_experiment.status = 'Complete'
+        new_experiment.metrics = metrics
+        flash(f'Experiment "{exp_name}" completed successfully!', 'success')
+        
         db.session.commit()
         return redirect(url_for('experiments'))
 
@@ -393,6 +413,7 @@ def start_training():
             experiment_to_fail.metrics = {'error': str(e)}
             db.session.commit()
         else:
+            app.logger.error(f"Could not find experiment {new_experiment.id} to mark as failed.")
             db.session.rollback()
 
         flash(f'Experiment "{exp_name}" failed: {str(e)}', 'danger')

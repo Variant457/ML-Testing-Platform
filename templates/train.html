@@ -6,8 +6,7 @@
     <title>ML Platform - Train Model</title>
     
     <link rel="stylesheet" href="{{url_for('static', filename='train.css')}}">
-    <link rel="stylesheet" href="{{url_for('static', filename='datasets.css')}}">
-</head>
+    </head>
 <body>
 
     <nav id="sidebar">
@@ -30,6 +29,16 @@
                     <a href="/logout" class="logout-button">Logout</a>
                 </div>
             </header>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }}" style="color: red; text-align: center; background: #ffebee; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
+                      {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
 
             <div class="train-container">
                 
@@ -73,7 +82,7 @@
                 <section class="config-card">
                     <h3></i> Hyperparameters</h3>
                     
-                    <div class="param-set" id="no-model-params">
+                    <div class="param-set" id="no-model-params" style="display: block;">
                         <p>Please select a model to configure hyperparameters.</p>
                     </div>
 
@@ -97,30 +106,88 @@
                         </div>
                         <div class="form-group">
                             <label for="logr-c">Regularization Strength (C)</label>
-                            <input type="number" step="0.01" name="logr_c" value="1.0" step="0.1" min="0.01">
+                            <input type="number" step="0.01" name="logr_c" value="1.0" min="0.01">
                             <small>Smaller values specify stronger regularization.</small>
                         </div>
                     </div>
-                </section>
+                    
+                    <div class="param-set" id="dnn_classifier_pytorch-params" style="display: none;">
+                        <div class="form-group">
+                            <label for="dnn_hidden_layers">Hidden Layer Sizes</label>
+                            <input type="text" name="dnn_hidden_layers" value="100, 50" placeholder="e.g., 100, 50, 25">
+                            <small>Comma-separated list of node counts for each hidden layer.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="dnn_activation">Activation Function</label>
+                            <select name="dnn_activation">
+                                <option value="relu" selected>ReLU</option>
+                                <option value="tanh">Tanh</option>
+                                <option value="logistic">Logistic (Sigmoid)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="dnn_max_iter">Epochs (Max Iterations)</label>
+                            <input type="number" name="dnn_max_iter" value="200" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="dnn_learning_rate">Learning Rate</label>
+                            <input type="number" name="dnn_learning_rate" value="0.001" step="0.0001" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="dnn_alpha">L2 Penalty (Alpha)</label>
+                            <input type="number" name="dnn_alpha" value="0.0001" step="0.0001" min="0">
+                            <small>Regularization term (weight decay).</small>
+                        </div>
+                    </div>
+                    
+                    <div class="param-set" id="dnn_regressor_pytorch-params" style="display: none;">
+                        <div class="form-group">
+                            <label for="dnn_hidden_layers">Hidden Layer Sizes</label>
+                            <input type="text" name="dnn_hidden_layers" value="100, 50" placeholder="e.g., 100, 50, 25">
+                            <small>Comma-separated list of node counts for each hidden layer.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="dnn_activation">Activation Function</label>
+                            <select name="dnn_activation">
+                                <option value="relu" selected>ReLU</option>
+                                <option value="tanh">Tanh</option>
+                                <option value="logistic">Logistic (Sigmoid)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="dnn_max_iter">Epochs (Max Iterations)</label>
+                            <input type="number" name="dnn_max_iter" value="200" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="dnn_learning_rate">Learning Rate</label>
+                            <input type="number" name="dnn_learning_rate" value="0.001" step="0.0001" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="dnn_alpha">L2 Penalty (Alpha)</label>
+                            <input type="number" name="dnn_alpha" value="0.0001" step="0.0001" min="0">
+                            <small>Regularization term (weight decay).</small>
+                        </div>
+                    </div>
+                    </section>
             </div>
 
-            <section class="config-card">
+            <section class="config-card" style="display: none;">
                 <h3></i> Evaluation Strategy</h3>
                 
                 <div class="metrics-group" id="regression-metrics" style="display: none;">
                     <h4>Regression Metrics</h4>
-                    <label><input type="checkbox" name="metrics" value="mae" checked> Mean Absolute Error (MAE)</label>
-                    <label><input type="checkbox" name="metrics" value="mse" checked> Mean Squared Error (MSE)</label>
-                    <label><input type="checkbox" name="metrics" value="r2" checked> R-squared (R2)</label>
+                    <label><input type="checkbox" name="metrics" value="mae" checked disabled> Mean Absolute Error (MAE)</label>
+                    <label><input type="checkbox" name="metrics" value="mse" checked disabled> Mean Squared Error (MSE)</label>
+                    <label><input type="checkbox" name="metrics" value="r2" checked disabled> R-squared (R2)</label>
                 </div>
 
                 <div class="metrics-group" id="classification-metrics" style="display: none;">
                     <h4>Classification Metrics</h4>
-                    <label><input type="checkbox" name="metrics" value="accuracy" checked> Accuracy</label>
-                    <label><input type="checkbox" name="metrics" value="precision" checked> Precision</label>
-                    <label><input type="checkbox" name="metrics" value="recall" checked> Recall</label>
-                    <label><input type="checkbox" name="metrics" value="f1" checked> F1-Score</label>
-                    <label><input type="checkbox" name="metrics" value="roc_auc" checked> ROC AUC</label>
+                    <label><input type="checkbox" name="metrics" value="accuracy" checked disabled> Accuracy</label>
+                    <label><input type="checkbox" name="metrics" value="precision" checked disabled> Precision</label>
+                    <label><input type="checkbox" name="metrics" value="recall" checked disabled> Recall</label>
+                    <label><input type="checkbox" name="metrics" value="f1" checked disabled> F1-Score</label>
+                    <label><input type="checkbox" name="metrics" value="roc_auc" checked disabled> ROC AUC</label>
                 </div>
 
             </section>
@@ -157,7 +224,7 @@
                 targetSelect.disabled = false;
                 targetSelect.innerHTML = '<option value="">-- Select Target Variable --</option>';
                 for (const [colName, colType] of Object.entries(columnData)) {
-                    targetSelect.innerHTML += `<option value="${colName}">${colName} (${colType})</option>`;
+                    targetSelect.innerHTML += `<option value="${colName}" data-type="${colType}">${colName} (${colType})</option>`;
                 }
             } catch (error) {
                 console.error('Error fetching dataset columns:', error);
@@ -166,13 +233,13 @@
         });
 
         targetSelect.addEventListener('change', (e) => {
-            const selectedColumn = e.target.value;
+            const selectedOption = e.target.options[e.target.selectedIndex];
             resetModelSelect();
             resetMetrics();
 
-            if(!selectedColumn) return;
+            if(!selectedOption || !selectedOption.value) return;
 
-            const targetType = columnData[selectedColumn] === 'numeric' ? 'regression' : 'classification';
+            const targetType = selectedOption.getAttribute('data-type') === 'numeric' ? 'regression' : 'classification';
 
             modelSelect.disabled = false;
             modelSelect.innerHTML = '<option value="">-- Select Model --</option>';
@@ -220,6 +287,86 @@
             document.getElementById('regression-metrics').style.display = 'none';
             document.getElementById('classification-metrics').style.display = 'none';
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const expNameInput = document.getElementById('exp-name');
+            const datasetSelect = document.getElementById('dataset-select');
+            const modelSelect = document.getElementById('model-select');
+
+            function updateExperimentName() {
+                const datasetName = datasetSelect.options[datasetSelect.selectedIndex]?.text.replace('_preprocessed.csv', '');
+                const modelName = modelSelect.options[modelSelect.selectedIndex]?.text;
+                
+                if (datasetName && modelName && datasetName.value !== "" && modelName.value !== "") {
+                    expNameInput.value = `${modelName} - ${datasetName}`;
+                }
+            }
+            
+            if (datasetSelect.value) {
+                datasetSelect.dispatchEvent(new Event('change'));
+            }
+
+            datasetSelect.addEventListener('change', updateExperimentName);
+            modelSelect.addEventListener('change', updateExperimentName);
+            
+            targetSelect.addEventListener('change', (e) => {
+                const selectedOption = e.target.options[e.target.selectedIndex];
+                resetModelSelect();
+                resetMetrics();
+
+                if(!selectedOption || !selectedOption.value) return;
+
+                const targetType = columnData[selectedOption.value] === 'numeric' ? 'regression' : 'classification';
+
+                modelSelect.disabled = false;
+                modelSelect.innerHTML = '<option value="">-- Select Model --</option>';
+                for (const [modelKey, modelInfo] of Object.entries(ALL_MODELS)) {
+                    if (modelInfo.type === targetType) {
+                        modelSelect.innerHTML += `<option value="${modelKey}">${modelInfo.name}</option>`;
+                    }
+                }
+
+                if (targetType === 'regression') {
+                    document.getElementById('regression-metrics').style.display = 'block';
+                    document.getElementById('classification-metrics').style.display = 'none';
+                } else {
+                    document.getElementById('regression-metrics').style.display = 'none';
+                    document.getElementById('classification-metrics').style.display = 'block';
+                }
+                
+                updateExperimentName();
+            });
+            
+            datasetSelect.addEventListener('change', async (e) => {
+                const datasetId = e.target.value;
+                
+                resetTargetSelect();
+                resetModelSelect();
+                resetMetrics();
+
+                if(!datasetId) return;
+
+                try {
+                    const response = await fetch(`/api/get-dataset-columns/${datasetId}`);
+                    if (!response.ok) throw new Error('Failed to fetch columns');
+
+                    columnData = await response.json();
+                    
+                    targetSelect.disabled = false;
+                    targetSelect.innerHTML = '<option value="">-- Select Target Variable --</option>';
+                    for (const [colName, colType] of Object.entries(columnData)) {
+                        // This is where the data-type attribute should have been set
+                        targetSelect.innerHTML += `<option value="${colName}" data-type="${colType}">${colName} (${colType})</option>`;
+                    }
+                } catch (error) {
+                    console.error('Error fetching dataset columns:', error);
+                    alert('Error fetching dataset columns. Please try again.');
+                }
+                
+                updateExperimentName();
+            });
+
+        });
     </script>
 
 </body>

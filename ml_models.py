@@ -6,7 +6,6 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
-from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.metrics import (
     mean_squared_error, 
     mean_absolute_error, 
@@ -223,6 +222,71 @@ def run_dnn_classifier_pytorch(X, y, parameters):
             'f1_score': f1_score(all_true, all_preds, average='weighted', zero_division=0),
             'roc_auc': roc_auc,
             'roc_curve': {'fpr': fpr.tolist(), 'tpr': tpr.tolist()},
+        }
+        return None, metrics, None
+        
+    except ValueError as ve:
+        return None, None, str(ve)
+    except Exception as e:
+        traceback.print_exc()
+        return None, None, f"PyTorch Model failed: {str(e)}"
+    
+def run_dnn_regressor_pytorch(X, y, parameters):
+    try:
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        
+        X_train_tensor = torch.tensor(X_train.values, dtype=torch.float32)
+        y_train_tensor = torch.tensor(y_train.values, dtype=torch.float32).unsqueeze(1)
+        X_test_tensor = torch.tensor(X_test.values, dtype=torch.float32)
+        y_test_tensor = torch.tensor(y_test.values, dtype=torch.float32).unsqueeze(1)
+
+        batch_size = 64
+        train_dataset = TensorDataset(X_train_tensor, y_train_tensor)
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+        test_dataset = TensorDataset(X_test_tensor, y_test_tensor)
+        test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+        hidden_layers = parse_hidden_layers(parameters.get('hidden_layer_sizes_str', '100'))
+        activation = parameters.get('activation', 'relu')
+        input_features = X.shape[1]
+        
+        output_classes = 1 
+        model = DynamicMLP(input_features, output_classes, hidden_layers, activation)
+        
+        epochs = int(parameters.get('max_iter', 200))
+        lr = float(parameters.get('learning_rate_init', 0.001))
+        alpha = float(parameters.get('alpha', 0.0001))
+        
+        criterion = nn.MSELoss() 
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=alpha)
+        
+        model.train() 
+        for epoch in range(epochs):
+            for X_batch, y_batch in train_loader:
+                outputs = model(X_batch)
+                loss = criterion(outputs, y_batch)
+                
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+        
+        model.eval() 
+        all_preds = []
+        all_true = []
+
+        with torch.no_grad(): 
+            for X_batch, y_batch in test_loader:
+                outputs = model(X_batch)
+                all_preds.extend(outputs.numpy())
+                all_true.extend(y_batch.numpy())
+        
+        all_preds = np.array(all_preds).flatten()
+        all_true = np.array(all_true).flatten()
+
+        metrics = {
+            'mse': mean_squared_error(all_true, all_preds),
+            'mae': mean_absolute_error(all_true, all_preds),
+            'r2_score': r2_score(all_true, all_preds),
         }
         return None, metrics, None
         
