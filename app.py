@@ -406,9 +406,23 @@ def experiment_detail(experiment_id):
     return render_template('experiment-result.html', experiment=experiment)
 
 @app.route('/compare')
+@app.route('/compare/<int:dataset_id>')
 @login_required
-def compare():
-    experiments = Experiment.query.filter_by(user_id=current_user.id, status='Complete').order_by(Experiment.dataset_id).all()
+def compare(dataset_id=None):
+    query = Experiment.query.filter_by(user_id=current_user.id, status='Complete')
+    
+    if dataset_id:
+        query = query.filter_by(dataset_id=dataset_id)
+
+    experiments = query.order_by(Experiment.dataset_id).all()
+    
+    filtered_dataset = None
+    if dataset_id:
+        filtered_dataset = Dataset.query.get_or_404(dataset_id)
+        if filtered_dataset.owner != current_user:
+            flash('You do not have permission to view this dataset.', 'danger')
+            return redirect(url_for('compare'))
+
     comparisons = {}
     for exp in experiments:
         if exp.dataset_id not in comparisons:
@@ -427,7 +441,11 @@ def compare():
         data['regression'].sort(key=lambda x: x.metrics.get('r2_score', -float('inf')), reverse=True)
         data['classification'].sort(key=lambda x: x.metrics.get('roc_auc', -float('inf')), reverse=True)
 
-    return render_template('compare.html', comparisons=comparisons)
+    return render_template(
+        'compare.html', 
+        comparisons=comparisons,
+        filtered_dataset=filtered_dataset 
+    )
 
 @app.route('/api/get-dataset-columns/<int:dataset_id>')
 @login_required

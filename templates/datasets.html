@@ -77,7 +77,7 @@
                                         </i> Modify
                                     {% endif %}
                                </a>
-                               <a href="#" class="btn-action btn-compare {% if dataset.status == 'Raw' %}disabled{% endif %}"></i> Compare</a>
+                               <a href="{{ url_for('compare', dataset_id=dataset.id) }}" class="btn-action btn-compare {% if dataset.status == 'Raw' %}disabled{% endif %}"></i> Compare</a>
                                
                                <button type="button" class="btn-secondary rename-modal-trigger"
                                     data-dataset-id="{{ dataset.id }}"
