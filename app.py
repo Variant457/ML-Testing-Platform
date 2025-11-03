@@ -369,6 +369,15 @@ def start_training():
             new_experiment.metrics = metrics
 
             flash(f'Experiment "{exp_name}" completed successfully!', 'success')
+        elif model_type == 'dnn_classifier_pytorch': 
+            hyperparameters = {
+                'hidden_layer_sizes_str': request.form.get('dnn_hidden_layers'),
+                'activation': request.form.get('dnn_activation'),
+                'max_iter': request.form.get('dnn_max_iter'), 
+                'learning_rate_init': request.form.get('dnn_learning_rate'),
+                'alpha': request.form.get('dnn_alpha')
+            }
+            new_experiment.parameters = hyperparameters
         else:
             raise Exception('Selected model type is not supported yet.')
         
