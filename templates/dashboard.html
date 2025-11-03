@@ -3,134 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ML Platform - Dashboard</title>
+    <title>Dashboard</title>
     
     <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='datasets.css') }}">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        .card {
+            margin-bottom: 1.5rem;
+        }
+        .stat-card-body {
+            text-align: center;
+        }
+        .stat-card-number {
+            font-size: 2.5rem;
+            font-weight: 500;
+        }
+        .list-group-item a {
+            text-decoration: none;
+        }
+        .list-group-item a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
 
     <nav id="sidebar">
         <h1></i> ML Platform</h1>
         <ul>
-            <li><a href="/dashboard" class="active"></i> Dashboard</a></li>
-            <li><a href="/datasets"></i> Datasets</a></li>
-            <li><a href="/train"></i> Train Model</a></li>
-            <li><a href="/experiments"></i> Experiments</a></li>
-            <li><a href="/compare"></i> Compare Models</a></li>
+            <li><a href="/dashboard" class="active">Dashboard</a></li>
+            <li><a href="/datasets">Datasets</a></li>
+            <li><a href="/train">Train Model</a></li>
+            <li><a href="/experiments">Experiments</a></li>
+            <li><a href="/compare">Compare Models</a></li>
         </ul>
     </nav>
 
     <main id="main-content">
-
-        <header class="top-bar">
-            <h2>Dashboard</h2>
-            <div class="user-info">
-                <span>Welcome, {{ current_user.username }}!</span>
-                <a href="/logout" class="logout-button">Logout</a>
-            </div>
-        </header>
-
-        <section class="stat-cards">
-            
-            <a href="/datasets" class="card">
-                <h3>My Datasets</h3>
-                <div class="stat-number">5</div>
-            </a>
-            
-            <a href="/experiments" class="card">
-                <h3>Experiments Run</h3>
-                <div class="stat-number">12</div>
-            </a>
-            
-            <a href="/compare" class="card">
-                <h3>Comparisons</h3>
-                <div class="stat-number">3</div>
-            </a>
-
-        </section>
-
-        <section class="cta-section">
-            <h2>Start a New Project</h2>
-            <a href="#" id="open-upload-modal-btn" class="cta-button"></i> Upload New Dataset</a>
-        </section>
-
-        <section class="recent-activity">
-
-            <div class="recent-list" id="recent-datasets">
-                <div class="recent-list-header">
-                    <h2>Recent Datasets</h2>
-                    <a href="/datasets" class="view-all-link">View all</a>
+        <div class="container-fluid">
+            <header class="top-bar">
+                <h2>Dashboard</h2>
+                <div class="user-info">
+                    <span>Welcome, {{ current_user.username }}!</span>
+                    <a href="/logout" class="logout-button">Logout</a>
                 </div>
-                <ul>
-                    <li>titanic.csv (Modified 5 minutes ago)</li>
-                    <li>house_prices.xlsx (Uploaded yesterday)</li>
-                    <li>customer_data.txt (Uploaded 3 days ago)</li>
-                </ul>
-            </div>
+            </header>
 
-            <div class="recent-list" id="recent-experiments">
-                <div class="recent-list-header">
-                    <h2>Recent Experiments</h2>
-                    <a href="/experiments" class="view-all-link">View all</a>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body stat-card-body">
+                            <h5 class="card-title">Total Datasets</h5>
+                            <p class="stat-card-number">{{ total_datasets }}</p>
+                            <a href="{{ url_for('datasets') }}" class="btn btn-primary btn-sm">Manage Datasets</a>
+                        </div>
+                    </div>
                 </div>
-                <ul>
-                    <li>Random Forest on titanic.csv (F1: 0.82)</li>
-                    <li>Logistic Regression on titanic.csv (F1: 0.79)</li>
-                    <li>DNN on house_prices.xlsx (MSE: 12045.2)</li>
-                </ul>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body stat-card-body">
+                            <h5 class="card-title">Total Experiments</h5>
+                            <p class="stat-card-number">{{ total_experiments }}</p>
+                            <a href="{{ url_for('experiments') }}" class="btn btn-primary btn-sm">View Experiments</a>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-        </section>
-
-    </main>
-
-    <div id="upload-modal-backdrop" class="modal-backdrop hidden"></div>
-
-    <div id="upload-modal" class="modal hidden">
-        <div class="modal-header">
-            <h3>Upload New Dataset</h3>
-            <button id="close-modal-btn" class="close-button">&times;</button>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <strong>Recent Datasets</strong>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            {% for dataset in recent_datasets %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <a href="{{ url_for('preprocess', dataset_id=dataset.id) }}">{{ dataset.filename }}</a>
+                                    <span class="badge 
+                                        {% if dataset.status == 'Raw' %}bg-secondary
+                                        {% elif dataset.status == 'Preprocessed' %}bg-success
+                                        {% else %}bg-light text-dark
+                                        {% endif %}">
+                                        {{ dataset.status }}
+                                    </span>
+                                </li>
+                            {% else %}
+                                <li class="list-group-item text-muted">No datasets uploaded yet.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <strong>Recent Experiments</strong>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            {% for exp in recent_experiments %}
+                                <li class="list-group-item">
+                                    <a href="{{ url_for('experiment_detail', experiment_id=exp.id) }}">{{ exp.name }}</a>
+                                    <small class="d-block text-muted">{{ exp.model_type | title | replace('_', ' ') }}</small>
+                                </li>
+                            {% else %}
+                                <li class="list-group-item text-muted">No experiments run yet.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <strong>Model Popularity</strong>
+                        </div>
+                        <div class="card-body">
+                            {% if chart_data %}
+                                <canvas id="modelPopularityChart"></canvas>
+                            {% else %}
+                                <p class="text-muted">Run experiments to see model popularity.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <form action="/upload-dataset" method="POST" enctype="multipart/form-data">
-            <div class="modal-body">
+        {% if chart_data %}
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('modelPopularityChart').getContext('2d');
+            
+            const labels = {{ chart_labels | tojson }};
+            const data = {{ chart_data | tojson }};
 
-                <div class="form-group">
-                    <label for="file-upload">Select File (.csv, .xlsx, .txt)</label>
-                    <input type="file" id="file-upload" name="dataset_file" accept=".csv,.xlsx,.txt" required>
-                </div>
-
-            </div>
-            <div class="modal-footer">
-                <button type="button" id="cancel-modal-btn" class="btn-secondary">Cancel</button>
-                <button type="submit" class="cta-button"></i> Upload & Process</button>
-            </div>
-        </form>
-    </div>
-
-    <script>
-        const openModalBtn = document.getElementById('open-upload-modal-btn');
-        const modalBackdrop = document.getElementById('upload-modal-backdrop');
-        const modal = document.getElementById('upload-modal');
-        const closeModalBtn = document.getElementById('close-modal-btn');
-        const cancelModalBtn = document.getElementById('cancel-modal-btn');
-
-        function openModal() {
-            modal.classList.remove('hidden');
-            modalBackdrop.classList.remove('hidden');
-        }
-
-        function closeModal() {
-            modal.classList.add('hidden');
-            modalBackdrop.classList.add('hidden');
-        }
-
-        openModalBtn.addEventListener('click', openModal);
-        closeModalBtn.addEventListener('click', closeModal);
-        cancelModalBtn.addEventListener('click', closeModal);
-        modalBackdrop.addEventListener('click', closeModal); 
-    </script>
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels.map(l => l.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())),
+                    datasets: [{
+                        label: 'Model Runs',
+                        data: data,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(255, 206, 86, 0.7)',
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(153, 102, 255, 0.7)',
+                            'rgba(255, 159, 64, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    }
+                }
+            });
+        });
+        </script>
+        {% endif %}
+    </main>
 
 </body>
 </html>

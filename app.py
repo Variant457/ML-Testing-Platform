@@ -1,6 +1,7 @@
 import os
 import uuid
 import pandas as pd
+import json
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from config import Config
@@ -8,6 +9,7 @@ from models import db, bcrypt, User, Dataset, Experiment
 from werkzeug.utils import secure_filename
 from utils import load_dataset, get_data_summary, apply_transformations
 from ml_models import AVAILABLE_MODELS, run_linear_regression, run_logistic_regression
+from collections import Counter
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -160,7 +162,59 @@ def delete_dataset(dataset_id):
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('dashboard.html')
+    total_datasets = Dataset.query.filter_by(user_id=current_user.id).count()
+    total_experiments = Experiment.query.filter_by(user_id=current_user.id).count()
+
+    recent_datasets = Dataset.query.filter_by(user_id=current_user.id).order_by(Dataset.uploaded_at.desc()).limit(5).all()
+    recent_experiments = Experiment.query.filter_by(user_id=current_user.id).order_by(Experiment.created_at.desc()).limit(5).all()
+    
+    all_experiments = Experiment.query.filter_by(user_id=current_user.id).all()
+    
+    best_classification_exp = None
+    best_accuracy = -1.0
+    
+    best_regression_exp = None
+    best_r2 = -float('inf')
+    
+    model_names = []
+
+    for exp in all_experiments:
+        model_names.append(exp.model_type)
+        if exp.status == 'Complete' and exp.metrics:
+            try:
+                results = exp.metrics
+                
+                if 'accuracy' in results and results['accuracy'] > best_accuracy:
+                    best_accuracy = results['accuracy']
+                    best_classification_exp = exp
+                
+                if 'r2_score' in results and results['r2_score'] > best_r2:
+                    best_r2 = results['r2_score']
+                    best_regression_exp = exp
+                        
+            except TypeError:
+                continue 
+            except Exception as e:
+                app.logger.error(f"Error processing dashboard metrics for exp {exp.id}: {e}")
+                continue
+
+    model_counts = Counter(model_names)
+    chart_labels = list(model_counts.keys())
+    chart_data = list(model_counts.values())
+
+    return render_template(
+        'dashboard.html', 
+        total_datasets=total_datasets,
+        total_experiments=total_experiments,
+        recent_datasets=recent_datasets,
+        recent_experiments=recent_experiments,
+        best_classification_exp=best_classification_exp,
+        best_accuracy=best_accuracy,
+        best_regression_exp=best_regression_exp,
+        best_r2=best_r2,
+        chart_labels=chart_labels,
+        chart_data=chart_data
+    )
 
 @app.route('/datasets')
 @login_required
@@ -394,6 +448,34 @@ def get_dataset_columns(dataset_id):
             columns_info[col] = 'categorical'
 
     return jsonify(columns_info)
+
+@app.route('/rename-dataset/<int:dataset_id>', methods=['POST'])
+@login_required
+def rename_dataset(dataset_id):
+    dataset = Dataset.query.get_or_404(dataset_id)
+    if dataset.owner != current_user:
+        flash('You do not have permission to rename this dataset.', 'danger')
+        return redirect(url_for('datasets'))
+
+    new_name = request.form.get('new_dataset_name')
+    if not new_name:
+        flash('New dataset name cannot be empty.', 'danger')
+        return redirect(url_for('datasets'))
+
+    existing_dataset = Dataset.query.filter_by(user_id=current_user.id, filename=new_name).filter(Dataset.id != dataset_id).first()
+    if existing_dataset:
+        flash('A dataset with this name already exists.', 'danger')
+        return redirect(url_for('datasets'))
+
+    dataset.filename = new_name
+    try:
+        db.session.commit()
+        flash(f'Dataset renamed successfully to {dataset.filename}.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'An error occurred while renaming the dataset: {str(e)}', 'danger')
+
+    return redirect(url_for('datasets'))
 
 def main():
     with app.app_context():
