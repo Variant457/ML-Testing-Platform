@@ -162,6 +162,7 @@ def apply_transformations(df, request_form):
                 encode_method = actions['encode']
                 
                 if encode_method == 'label':
+                    df_transformed[col_name] = df_transformed[col_name].fillna('__MISSING__')
                     le = LabelEncoder()
                     df_transformed[col_name] = le.fit_transform(df_transformed[col_name])
                 elif encode_method == 'one_hot':

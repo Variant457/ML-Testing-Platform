@@ -9,12 +9,10 @@ from sklearn.metrics import (
     precision_score,
     recall_score, 
     f1_score, 
-    roc_auc_score,
     roc_curve,
     precision_recall_curve,
     auc
 )
-from utils import load_dataset
 
 AVAILABLE_MODELS = {
     'linear_regression': {
@@ -29,71 +27,49 @@ AVAILABLE_MODELS = {
     }
 }
 
-def run_linear_regression(dataset_obj, target_column, parameters):
-    df, error = load_dataset(dataset_obj)
-    if error:
-        return None, None, f"Error loading dataset: {error}"
-    
-    if target_column not in df.columns: #type: ignore
-        return None, None, f"Target column '{target_column}' not found in dataset."
-    
-    try:
-        X = df.drop(columns=[target_column])  #type: ignore
-        y = df[target_column]  #type: ignore
-
-        if not all(pd.api.types.is_numeric_dtype(X[col]) for col in X.columns):
-            return None, None, f"All feature columns must be numeric for Linear Regression. Please preprocess the data accordingly."
-    except Exception as e:
-        return None, None, f"Data Preparation Error: {e}"
+def run_linear_regression(X, y, parameters):
+    non_numeric_cols = [col for col in X.columns if not pd.api.types.is_numeric_dtype(X[col])]
+    if non_numeric_cols:
+        return None, None, f"Non-numeric columns found in features: {', '.join(non_numeric_cols)}. Please preprocess the data to convert these columns to numeric types."
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    model = LinearRegression(**parameters)
-    model.fit(X_train, y_train)
+    try:
+        model = LinearRegression(**parameters)
+        model.fit(X_train, y_train)
+    except Exception as e:
+        return None, None, f"Model Training Error: {str(e)}"
 
     y_pred = model.predict(X_test)
 
-    mse = mean_squared_error(y_test, y_pred)
-    mae = mean_absolute_error(y_test, y_pred)
-    r2 = r2_score(y_test, y_pred)
-
     metrics = {
-        'mse': mse,
-        'mae': mae,
-        'r2_score': r2,
+        'mse': mean_squared_error(y_test, y_pred),
+        'mae': mean_absolute_error(y_test, y_pred),
+        'r2_score': r2_score(y_test, y_pred),
         'feature_coefficients': dict(zip(X.columns, model.coef_))
     }
 
     return model, metrics, None
 
-def run_logistic_regression(dataset_obj, target_column, parameters):
-    df, error = load_dataset(dataset_obj)
-    if error:
-        return None, None, f"Error loading dataset: {error}"
-    
-    if target_column not in df.columns: #type: ignore
-        return None, None, f"Target column '{target_column}' not found in dataset."
-    
-    try:
-        X = df.drop(columns=[target_column])  #type: ignore
-        y = df[target_column]  #type: ignore
-
-        if not all(pd.api.types.is_numeric_dtype(X[col]) for col in X.columns):
-            return None, None, f"All feature columns must be numeric for Logistic Regression. Please preprocess the data accordingly."
-    except Exception as e:
-        return None, None, f"Data Preparation Error: {e}"
+def run_logistic_regression(X, y, parameters):
+    non_numeric_cols = [col for col in X.columns if not pd.api.types.is_numeric_dtype(X[col])]
+    if non_numeric_cols:
+        return None, None, f"Non-numeric columns found in features: {', '.join(non_numeric_cols)}. Please preprocess the data to convert these columns to numeric types."
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     model_params = {
-        'penality': parameters.get('penalty'),
+        'penalty': parameters.get('penalty'),
         'C': float(parameters.get('C', 1.0)),
         'solver': 'liblinear',
         'max_iter': 1000
     }
 
-    model = LogisticRegression(**model_params)
-    model.fit(X_train, y_train)
+    try:
+        model = LogisticRegression(**model_params)
+        model.fit(X_train, y_train)
+    except Exception as e:
+        return None, None, f"Model Training Error: {str(e)}"
 
     y_pred = model.predict(X_test)
     y_proba = model.predict_proba(X_test)
@@ -104,6 +80,7 @@ def run_logistic_regression(dataset_obj, target_column, parameters):
 
     precision, recall, _ = precision_recall_curve(y_test, y_scores)
     pr_auc = auc(recall, precision)
+
 
     metrics = {
         'accuracy': accuracy_score(y_test, y_pred),

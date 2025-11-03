@@ -144,6 +144,7 @@ def delete_dataset(dataset_id):
     try:
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], dataset.filepath)
         if os.path.exists(file_path):
+            Experiment.query.filter_by(dataset_id=dataset.id).delete()
             os.remove(file_path)
 
         db.session.delete(dataset)
@@ -276,24 +277,28 @@ def start_training():
     new_experiment.target_variable = target_variable
     new_experiment.parameters = {}
 
-    db.session.add(new_experiment)
-    db.session.commit()
-
     try:
+        df = pd.read_csv(dataset.filepath)
+
+        if target_variable not in df.columns:
+            flash(f'Target variable "{target_variable}" not found in dataset.', 'danger')
+            return redirect(url_for('train'))
+        
+        X = df.drop(columns=[target_variable])
+        y = df[target_variable]
+
         if model_type == 'linear_regression':
             hyperparameters = {'fit_intercept': request.form.get('lr_fit_intercept') == 'True'}
             new_experiment.parameters = hyperparameters
 
-            model, metrics, error = run_linear_regression(dataset, target_variable, hyperparameters)
+            model, metrics, error = run_linear_regression(X, y, hyperparameters)
             if error:
                 raise Exception(error)
             
             new_experiment.status = 'Complete'
             new_experiment.metrics = metrics
-            db.session.commit()
 
             flash(f'Experiment "{exp_name}" completed successfully!', 'success')
-            return redirect(url_for('experiments'))
         elif model_type == 'logistic_regression':
             hyperparameters = {
                 'penalty': request.form.get('logreg_penalty'),
@@ -301,19 +306,22 @@ def start_training():
             }
             new_experiment.parameters = hyperparameters
 
-            model, metrics, error = run_logistic_regression(dataset, target_variable, hyperparameters)
+            model, metrics, error = run_logistic_regression(X, y, hyperparameters)
 
             if error:
                 raise Exception(error)
             
             new_experiment.status = 'Complete'
             new_experiment.metrics = metrics
-            db.session.commit()
 
             flash(f'Experiment "{exp_name}" completed successfully!', 'success')
-            return redirect(url_for('experiments'))
         else:
             raise Exception('Selected model type is not supported yet.')
+        
+        db.session.add(new_experiment)
+        db.session.commit()
+        return redirect(url_for('experiments'))
+
     except Exception as e:
         db.session.rollback()
         experiment_to_fail = Experiment.query.get(new_experiment.id)
@@ -326,7 +334,7 @@ def start_training():
 
         flash(f'Experiment "{exp_name}" failed: {str(e)}', 'danger')
         return redirect(url_for('train'))
-
+    
 @app.route('/experiments')
 @login_required
 def experiments():
@@ -390,6 +398,6 @@ def get_dataset_columns(dataset_id):
 def main():
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
 
 main()
